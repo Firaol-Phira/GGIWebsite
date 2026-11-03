@@ -18,7 +18,7 @@ function AuthFooter() {
           {/* Secure System Badge */}
           <div className="d-flex align-items-center gap-2 fs-8 text-light opacity-75">
             <i className="bi bi-shield-lock-fill text-emerald"></i>
-            <span>Secured CBE Financial Portal & Audit Gateway</span>
+            <span className="sp">Secured CBE Financial Portal & Audit Gateway</span>
           </div>
         </div>
       </div>

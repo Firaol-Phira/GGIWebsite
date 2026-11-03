@@ -61,3 +61,12 @@
 .ggi-table th { color: #6b7280; font-weight: 600; font-size: .85rem; white-space: nowrap; }
 .ggi-table td { white-space: nowrap; }
 .ggi-role-select { min-width: 130px; }
+
+.ggi-side-heading {
+  color: var(--ggi-gold);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 1rem .9rem .4rem;
+}

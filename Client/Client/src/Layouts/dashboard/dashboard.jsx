@@ -12,7 +12,11 @@ const MENU = {
   ],
   member: [{ to: "/member", label: "My Payments", icon: "bi-receipt" }],
 };
-
+const MEMBER_LINK = {
+  to: "/member",
+  label: "Member portal",
+  icon: "bi-person-badge",
+};
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -59,6 +63,15 @@ export default function DashboardLayout() {
                 {m.label}
               </NavLink>
             ))}
+            {user.role !== "member" && (
+              <>
+                <div className="ggi-side-heading">As a member</div>
+                <NavLink to={MEMBER_LINK.to} className="ggi-side-link">
+                  <i className={`bi ${MEMBER_LINK.icon} me-2`} />
+                  {MEMBER_LINK.label}
+                </NavLink>
+              </>
+            )}
             <NavLink to="/change-password" className="ggi-side-link">
               <i className="bi bi-key me-2" />
               Change password

@@ -77,7 +77,7 @@ export default function App() {
 
       <Route
         element={
-          <ProtectedRoute roles={["member"]}>
+          <ProtectedRoute roles={["member","admin", "finance", "secretary"]}>
             <DashboardLayout />
           </ProtectedRoute>
         }
