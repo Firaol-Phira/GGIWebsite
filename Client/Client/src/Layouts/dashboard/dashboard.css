@@ -1,0 +1,63 @@
+/* ---------- Shell ---------- */
+.ggi-dash { min-height: 100vh; background: #f3f5f9; }
+.ggi-dash-main { min-width: 0; }
+
+/* ---------- Sidebar ---------- */
+.ggi-sidebar-wrap { --bs-offcanvas-width: 260px; }
+.ggi-sidebar {
+  width: 260px;
+  height: 100%;
+  min-height: 100vh;
+  background: var(--ggi-navy);
+  color: #fff;
+}
+.ggi-side-logo { color: var(--ggi-gold); font-size: 1.8rem; font-weight: 800; }
+
+.ggi-side-link {
+  display: block;
+  color: rgba(255, 255, 255, .75);
+  text-decoration: none;
+  padding: .7rem .9rem;
+  border-radius: .6rem;
+  margin-bottom: .25rem;
+}
+.ggi-side-link:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.ggi-side-link.active {
+  background: var(--ggi-green);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---------- Top bar ---------- */
+.ggi-topbar { background: #fff; border-bottom: 1px solid #e3e7ee; }
+.ggi-role-badge { background: #e7f6ef; color: var(--ggi-green); font-weight: 600; }
+
+/* ---------- Page pieces ---------- */
+.ggi-page-title { font-weight: 800; color: var(--ggi-navy); }
+.ggi-panel { border: 0; border-radius: 1rem; box-shadow: 0 2px 10px rgba(16, 44, 87, .06); }
+.ggi-panel .card-header {
+  background: transparent;
+  border-bottom: 1px solid #edf0f5;
+  font-weight: 700;
+  color: var(--ggi-navy);
+}
+
+.ggi-dash .form-control:focus,
+.ggi-dash .form-select:focus {
+  border-color: var(--ggi-green);
+  box-shadow: 0 0 0 .2rem rgba(0, 168, 107, .2);
+}
+
+.ggi-btn-green { background: var(--ggi-green); color: #fff; border: 0; font-weight: 600; }
+.ggi-btn-green:hover { background: #008f5a; color: #fff; }
+
+.ggi-temp-pass {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+  user-select: all;
+}
+
+.ggi-table th { color: #6b7280; font-weight: 600; font-size: .85rem; white-space: nowrap; }
+.ggi-table td { white-space: nowrap; }
+.ggi-role-select { min-width: 130px; }

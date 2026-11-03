@@ -1,0 +1,45 @@
+/* Full-screen navy background behind the card */
+.ggi-auth {
+  min-height: 100vh;
+  background: var(--ggi-navy);
+}
+
+/* White card in the middle */
+.ggi-auth-card {
+  max-width: 440px;
+  border-radius: 1.25rem;
+}
+
+/* GGI logo inside the card */
+.ggi-auth .ggi-logo {
+  color: var(--ggi-navy);
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+
+/* Inputs: green focus ring to match the design */
+.ggi-auth .form-control {
+  background: #f3f6fc;
+  border-color: #e1e7f2;
+}
+.ggi-auth .form-control:focus {
+  background: #fff;
+  border-color: var(--ggi-green);
+  box-shadow: 0 0 0 .2rem rgba(0, 168, 107, .2);
+}
+
+/* Links inside the card */
+.ggi-auth a { color: var(--ggi-green); text-decoration: none; }
+.ggi-auth a:hover { text-decoration: underline; }
+.ggi-auth a.ggi-logo { text-decoration: none; }
+
+/* Primary button (navy, same as the site's Sign in button) */
+.ggi-auth .ggi-btn-navy {
+  background: var(--ggi-navy);
+  color: #fff;
+  font-weight: 600;
+  border: 0;
+}
+.ggi-auth .ggi-btn-navy:hover { background: var(--ggi-navy-dark); color: #fff; }
+.ggi-auth .ggi-btn-navy:disabled { background: var(--ggi-navy); opacity: .7; }

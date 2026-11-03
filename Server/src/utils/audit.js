@@ -1,15 +1,7 @@
-const pool = require("../config/db");
+const AuditLog = require("../models/AuditLog");
 
-// conn is optional: pass a transaction connection when inside one
-exports.logAction = (
-  userId,
-  action,
-  entity,
-  entityId,
-  details = null,
-  conn = pool,
-) =>
-  conn.query(
-    "INSERT INTO audit_logs (user_id, action, entity, entity_id, details) VALUES (?, ?, ?, ?, ?)",
-    [userId, action, entity, entityId, details],
+exports.logAction = (userId, action, entity, entityId, details = null, db) =>
+  AuditLog.create(
+    { user_id: userId, action, entity, entity_id: entityId, details },
+    db,
   );

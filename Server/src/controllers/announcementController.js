@@ -1,7 +1,7 @@
-const pool = require("../config/db");
+const Announcement = require("../models/Announcement");
 const { logAction } = require("../utils/audit");
 
-// Builds a URL-friendly slug. Amharic titles give an empty slug, so a unique suffix is always added.
+// Amharic titles give an empty slug, so a unique suffix is always added
 const makeSlug = (title) => {
   const base = title
     .toLowerCase()
@@ -13,84 +13,49 @@ const makeSlug = (title) => {
 };
 
 // ---------- PUBLIC (no login) ----------
-
-// GET /api/announcements?page=1&limit=9
 exports.listPublished = async (req, res, next) => {
   try {
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Number(req.query.limit) || 9, 50);
-    const offset = (page - 1) * limit;
-
-    const [rows] = await pool.query(
-      `SELECT id, title, slug, cover_image, published_at,
-              LEFT(content, 200) AS excerpt
-       FROM announcements WHERE status = 'published'
-       ORDER BY published_at DESC LIMIT ? OFFSET ?`,
-      [limit, offset],
-    );
-    const [[{ total }]] = await pool.query(
-      "SELECT COUNT(*) AS total FROM announcements WHERE status = 'published'",
-    );
-    res.json({ announcements: rows, page, limit, total });
+    const [announcements, total] = await Promise.all([
+      Announcement.listPublished(limit, (page - 1) * limit),
+      Announcement.countPublished(),
+    ]);
+    res.json({ announcements, page, limit, total });
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/announcements/:slug
 exports.getPublished = async (req, res, next) => {
   try {
-    const [rows] = await pool.query(
-      `SELECT a.id, a.title, a.slug, a.content, a.cover_image, a.published_at,
-              u.full_name AS author
-       FROM announcements a JOIN users u ON u.id = a.author_id
-       WHERE a.slug = ? AND a.status = 'published'`,
-      [req.params.slug],
-    );
-    if (!rows.length)
-      return res.status(404).json({ message: "Announcement not found" });
-    res.json({ announcement: rows[0] });
+    const a = await Announcement.findPublishedBySlug(req.params.slug);
+    if (!a) return res.status(404).json({ message: "Announcement not found" });
+    res.json({ announcement: a });
   } catch (err) {
     next(err);
   }
 };
 
 // ---------- SECRETARY / ADMIN ----------
-
-// GET /api/announcements/manage/all?status=draft
 exports.listAll = async (req, res, next) => {
   try {
-    const { status } = req.query;
-    const [rows] = await pool.query(
-      `SELECT a.id, a.title, a.slug, a.status, a.cover_image, a.published_at,
-              a.created_at, u.full_name AS author
-       FROM announcements a JOIN users u ON u.id = a.author_id
-       ${status ? "WHERE a.status = ?" : ""}
-       ORDER BY a.created_at DESC`,
-      status ? [status] : [],
-    );
-    res.json({ announcements: rows });
+    res.json({ announcements: await Announcement.listAll(req.query.status) });
   } catch (err) {
     next(err);
   }
 };
 
-// GET /api/announcements/manage/:id  (full record for the edit form)
 exports.getOne = async (req, res, next) => {
   try {
-    const [rows] = await pool.query(
-      "SELECT * FROM announcements WHERE id = ?",
-      [req.params.id],
-    );
-    if (!rows.length)
-      return res.status(404).json({ message: "Announcement not found" });
-    res.json({ announcement: rows[0] });
+    const a = await Announcement.findById(req.params.id);
+    if (!a) return res.status(404).json({ message: "Announcement not found" });
+    res.json({ announcement: a });
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/announcements   (saved as draft)
 exports.create = async (req, res, next) => {
   try {
     const { title, content } = req.body;
@@ -99,33 +64,24 @@ exports.create = async (req, res, next) => {
         .status(400)
         .json({ message: "title and content are required" });
     }
-    const [r] = await pool.query(
-      "INSERT INTO announcements (title, slug, content, author_id) VALUES (?, ?, ?, ?)",
-      [title, makeSlug(title), content, req.user.id],
-    );
-    await logAction(
-      req.user.id,
-      "ANNOUNCEMENT_CREATED",
-      "announcement",
-      r.insertId,
-    );
-    res.status(201).json({ id: r.insertId, status: "draft" });
+    const id = await Announcement.create({
+      title,
+      slug: makeSlug(title),
+      content,
+      author_id: req.user.id,
+    });
+    await logAction(req.user.id, "ANNOUNCEMENT_CREATED", "announcement", id);
+    res.status(201).json({ id, status: "draft" });
   } catch (err) {
     next(err);
   }
 };
 
-// PATCH /api/announcements/:id
 exports.update = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const { title, content } = req.body;
-    const [r] = await pool.query(
-      `UPDATE announcements SET title = COALESCE(?, title), content = COALESCE(?, content)
-       WHERE id = ?`,
-      [title ?? null, content ?? null, id],
-    );
-    if (!r.affectedRows)
+    const found = await Announcement.update(id, req.body);
+    if (!found)
       return res.status(404).json({ message: "Announcement not found" });
     await logAction(req.user.id, "ANNOUNCEMENT_UPDATED", "announcement", id);
     res.json({ message: "Updated" });
@@ -134,17 +90,11 @@ exports.update = async (req, res, next) => {
   }
 };
 
-// PATCH /api/announcements/:id/publish   and   /unpublish
 const setStatus = (status) => async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const [r] = await pool.query(
-      `UPDATE announcements SET status = ?,
-         published_at = IF(? = 'published', COALESCE(published_at, NOW()), published_at)
-       WHERE id = ?`,
-      [status, status, id],
-    );
-    if (!r.affectedRows)
+    const found = await Announcement.setStatus(id, status);
+    if (!found)
       return res.status(404).json({ message: "Announcement not found" });
     await logAction(
       req.user.id,
@@ -162,14 +112,11 @@ const setStatus = (status) => async (req, res, next) => {
 exports.publish = setStatus("published");
 exports.unpublish = setStatus("draft");
 
-// DELETE /api/announcements/:id
 exports.remove = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const [r] = await pool.query("DELETE FROM announcements WHERE id = ?", [
-      id,
-    ]);
-    if (!r.affectedRows)
+    const found = await Announcement.remove(id);
+    if (!found)
       return res.status(404).json({ message: "Announcement not found" });
     await logAction(req.user.id, "ANNOUNCEMENT_DELETED", "announcement", id);
     res.json({ message: "Deleted" });
