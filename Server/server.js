@@ -18,8 +18,10 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", require("./src/routes/auth"));
 app.use("/api/users", require("./src/routes/users"));
 app.use("/api/members", require("./src/routes/members"));
-
+app.use("/api/settings", require("./src/routes/settings"));
+app.use("/api/payments", require("./src/routes/payments"));
 app.use(errorHandler);
+app.use("/api/announcements", require("./src/routes/announcements"));
 
 const PORT = process.env.PORT || 5000;
 

@@ -55,3 +55,33 @@ exports.login = async (req, res, next) => {
 exports.me = (req, res) => {
   res.json({ user: req.user });
 };
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password) {
+      return res.status(400).json({ message: "Both passwords are required" });
+    }
+    if (new_password.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "New password must be at least 8 characters" });
+    }
+
+    const [rows] = await pool.query(
+      "SELECT password_hash FROM users WHERE id = ?",
+      [req.user.id],
+    );
+    const ok = await bcrypt.compare(current_password, rows[0].password_hash);
+    if (!ok)
+      return res.status(401).json({ message: "Current password is wrong" });
+
+    const hash = await bcrypt.hash(new_password, 12);
+    await pool.query(
+      "UPDATE users SET password_hash = ?, must_change_password = 0 WHERE id = ?",
+      [hash, req.user.id],
+    );
+    res.json({ message: "Password changed" });
+  } catch (err) {
+    next(err);
+  }
+};

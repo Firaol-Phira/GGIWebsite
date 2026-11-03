@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const rateLimit = require("express-rate-limit");
-const { login, me } = require("../controllers/authController");
+const { login, me, changePassword } = require("../controllers/authController");
 const { protect } = require("../middleware/auth");
 
 // Max 10 login attempts per 15 minutes per IP (stops password guessing)
@@ -12,5 +12,6 @@ const loginLimiter = rateLimit({
 
 router.post("/login", loginLimiter, login);
 router.get("/me", protect, me);
+router.patch("/change-password", protect, changePassword);
 
 module.exports = router;
