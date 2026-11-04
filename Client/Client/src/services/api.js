@@ -23,6 +23,8 @@ api.interceptors.response.use(
 );
 
 export const errorMessage = (err) =>
-  err.response?.data?.message || "Cannot reach the server";
+  err.response
+    ? err.response.data?.message || `Server error (${err.response.status})`
+    : "Cannot reach the server";
 
 export default api;

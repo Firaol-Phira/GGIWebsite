@@ -111,3 +111,8 @@ CREATE TABLE audit_logs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+ALTER TABLE payments
+  ADD COLUMN source ENUM('member','finance') NOT NULL DEFAULT 'finance' AFTER status;
+  
+  ALTER TABLE payments ADD COLUMN receipt_url VARCHAR(500) NULL AFTER receipt_path;

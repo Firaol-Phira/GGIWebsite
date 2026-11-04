@@ -1,0 +1,32 @@
+.ggi-month-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: .75rem;
+}
+.ggi-month {
+  border-radius: .75rem;
+  padding: .8rem .5rem;
+  text-align: center;
+  border: 2px dashed #cfd6e4;
+  background: #fff;
+  color: #6b7280;
+}
+.ggi-month strong { display: block; color: inherit; }
+.ggi-month small { font-size: .72rem; }
+.ggi-month.approved { border: 2px solid var(--ggi-green); background: #e7f6ef; color: #0b6b45; }
+.ggi-month.pending { border: 2px solid #f0b429; background: #fff7e0; color: #8a6100; }
+
+.ggi-pay-card { border-left: 5px solid var(--ggi-gold); }
+.ggi-account {
+  background: #f3f6fc;
+  border-radius: .75rem;
+  padding: .9rem 1rem;
+}
+.ggi-account .num { font-family: ui-monospace, Consolas, monospace; font-size: 1.15rem; user-select: all; }
+.ggi-amount-box {
+  background: var(--ggi-navy);
+  color: #fff;
+  border-radius: .75rem;
+  padding: 1rem 1.25rem;
+}
+.ggi-amount-box .value { color: var(--ggi-gold); font-size: 1.8rem; font-weight: 800; }

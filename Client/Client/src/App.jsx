@@ -10,6 +10,10 @@ import Login from "./pages/Login/Login";
 import ProtectedRoute from "./routes/protectedRoute";
 
 import Users from "./componenets/user/user";
+import MemberPortal from "./componenets/memeber/member";
+import Contribute from "./componenets/contribute/contribute";
+import Finance from "./componenets/Finance/finance";
+import About from "./pages/About/About";
 
 const ComingSoon = ({ title }) => (
   <div className="text-center py-5">
@@ -24,6 +28,7 @@ export default function App() {
       {/* Public website */}
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/About" element={<About />} />
       </Route>
 
       {/* Login and change password */}
@@ -59,7 +64,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/finance" element={<ComingSoon title="Payments" />} />
+        <Route path="/finance" element={<Finance title="Payments" />} />
       </Route>
 
       <Route
@@ -77,12 +82,20 @@ export default function App() {
 
       <Route
         element={
-          <ProtectedRoute roles={["member","admin", "finance", "secretary"]}>
+          <ProtectedRoute roles={["member", "admin", "finance", "secretary"]}>
             <DashboardLayout />
           </ProtectedRoute>
         }
       >
-        <Route path="/member" element={<ComingSoon title="My Payments" />} />
+        <Route path="/member" element={<MemberPortal title="My Payments" />} />
+        <Route
+          path="/member/pay-monthly"
+          element={<Contribute key="m" type="monthly" />}
+        />
+        <Route
+          path="/member/pay-yearly"
+          element={<Contribute key="y" type="yearly" />}
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
