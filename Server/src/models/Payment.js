@@ -28,6 +28,7 @@ exports.create = async (p, db = pool) => {
 exports.findDuplicate = async ({ member_id, year, type, month }, db = pool) => {
   const [rows] = await db.query(
     `SELECT id FROM payments
+    
      WHERE member_id = ? AND period_year = ? AND payment_type = ?
        AND (? IS NULL OR period_month = ?) AND status IN ('pending','approved')`,
     [member_id, year, type, month, month],
