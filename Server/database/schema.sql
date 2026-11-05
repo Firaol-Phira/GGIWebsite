@@ -116,3 +116,20 @@ ALTER TABLE payments
   ADD COLUMN source ENUM('member','finance') NOT NULL DEFAULT 'finance' AFTER status;
   
   ALTER TABLE payments ADD COLUMN receipt_url VARCHAR(500) NULL AFTER receipt_path;
+  ALTER TABLE payments ADD COLUMN period_quarter TINYINT NULL AFTER period_month;
+
+  ALTER TABLE contribution_settings
+  ADD COLUMN q1_due DATE NULL, ADD COLUMN q2_due DATE NULL,
+  ADD COLUMN q3_due DATE NULL, ADD COLUMN q4_due DATE NULL;
+
+  ALTER TABLE announcements
+  ADD COLUMN category ENUM('general','monthly_rate','yearly_rate','committee_meeting','general_meeting')
+      NOT NULL DEFAULT 'general' AFTER content,
+  ADD COLUMN meeting_link VARCHAR(500) NULL AFTER category,
+  ADD COLUMN is_pinned TINYINT(1) NOT NULL DEFAULT 0 AFTER meeting_link;
+
+  ALTER TABLE contact_messages
+  ADD COLUMN subject VARCHAR(200) NULL AFTER phone,
+  ADD COLUMN user_type VARCHAR(30) NULL AFTER subject,
+  ADD COLUMN replied_at DATETIME NULL,
+  ADD COLUMN replied_by INT NULL;

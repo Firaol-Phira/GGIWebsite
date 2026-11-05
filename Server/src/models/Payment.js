@@ -1,17 +1,28 @@
 const pool = require("../config/db");
 const DUE_DAY = Number(process.env.DUE_DAY) || 15;
-const ON_TIME = `(p.payment_date <= STR_TO_DATE(CONCAT(p.period_year,'-',COALESCE(p.period_month,1),'-',${DUE_DAY}),'%Y-%m-%d')) AS on_time`;
-
+// Monthly: due on DUE_DAY of that month. Quarterly: due on DUE_DAY of the quarter's first month.
+const DUE = `CASE WHEN p.payment_type = 'monthly'
+  THEN STR_TO_DATE(CONCAT(p.period_year,'-',p.period_month,'-',${DUE_DAY}),'%Y-%m-%d')
+  ELSE CASE p.period_quarter WHEN 1 THEN cs.q1_due WHEN 2 THEN cs.q2_due
+       WHEN 3 THEN cs.q3_due ELSE cs.q4_due END END`;
+const ON_TIME = `
+  CASE
+    WHEN p.status != 'approved' THEN NULL
+    WHEN p.payment_date <= (${DUE}) THEN 'on_time'
+    ELSE 'late'
+  END AS payment_timing
+`;
 exports.create = async (p, db = pool) => {
   const [r] = await db.query(
-    `INSERT INTO payments (member_id, payment_type, period_year, period_month, amount,
-       payment_date, method, receipt_url, note, source, recorded_by)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    `INSERT INTO payments (member_id, payment_type, period_year, period_month, period_quarter,
+       amount, payment_date, method, receipt_url, note, source, recorded_by)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       p.member_id,
       p.payment_type,
       p.period_year,
       p.period_month,
+      p.period_quarter,
       p.amount,
       p.payment_date,
       p.method,
@@ -24,17 +35,22 @@ exports.create = async (p, db = pool) => {
   return r.insertId;
 };
 
-// A yearly payment blocks every month, and any monthly payment blocks yearly
-exports.findDuplicate = async ({ member_id, year, type, month }, db = pool) => {
+// One monthly payment per month, one yearly installment per quarter
+exports.findDuplicate = async (
+  { member_id, year, type, month, quarter },
+  db = pool,
+) => {
   const [rows] = await db.query(
     `SELECT id FROM payments
-    
      WHERE member_id = ? AND period_year = ? AND payment_type = ?
-       AND (? IS NULL OR period_month = ?) AND status IN ('pending','approved')`,
-    [member_id, year, type, month, month],
+       AND COALESCE(period_month,0) = COALESCE(?,0)
+       AND COALESCE(period_quarter,0) = COALESCE(?,0)
+       AND status IN ('pending','approved')`,
+    [member_id, year, type, month, quarter],
   );
   return rows[0];
 };
+
 exports.findByReceiptUrl = async (url, db = pool) => {
   const [rows] = await db.query(
     "SELECT id FROM payments WHERE receipt_url = ? AND status IN ('pending','approved')",
@@ -45,7 +61,7 @@ exports.findByReceiptUrl = async (url, db = pool) => {
 
 exports.coverage = async (memberId, year, db = pool) => {
   const [rows] = await db.query(
-    `SELECT payment_type, period_month, status FROM payments
+    `SELECT payment_type, period_month, period_quarter, status FROM payments
      WHERE member_id = ? AND period_year = ? AND status IN ('pending','approved')`,
     [memberId, year],
   );
@@ -66,28 +82,31 @@ exports.list = async ({ status, member_id, year, type } = {}, db = pool) => {
       params.push(val);
     }
   }
-  const [rows] = await db.query(
-    `SELECT p.*, ${ON_TIME}, m.full_name AS member_name,
-            r.full_name AS recorded_by_name, v.full_name AS reviewed_by_name
-     FROM payments p
-     JOIN members m ON m.id = p.member_id
-     JOIN users r ON r.id = p.recorded_by
-     LEFT JOIN users v ON v.id = p.reviewed_by
-     ${where.length ? "WHERE " + where.join(" AND ") : ""}
-     ORDER BY p.created_at DESC`,
-    params,
-  );
+const [rows] = await db.query(
+  `SELECT p.*, ${ON_TIME}, m.full_name AS member_name,
+          r.full_name AS recorded_by_name, v.full_name AS reviewed_by_name
+   FROM payments p
+   LEFT JOIN contribution_settings cs ON cs.year = p.period_year
+   JOIN members m ON m.id = p.member_id
+   JOIN users r ON r.id = p.recorded_by
+   LEFT JOIN users v ON v.id = p.reviewed_by
+   ${where.length ? "WHERE " + where.join(" AND ") : ""}
+   ORDER BY p.created_at DESC`,
+  params,
+);
   return rows;
 };
 
 exports.listForMember = async (memberId, db = pool) => {
-  const [rows] = await db.query(
-    `SELECT p.id, p.payment_type, p.period_year, p.period_month, p.amount, p.payment_date,
-            p.method, p.receipt_url, p.status, p.reject_reason, ${ON_TIME}
-     FROM payments p WHERE p.member_id = ?
-     ORDER BY p.period_year DESC, p.period_month DESC`,
-    [memberId],
-  );
+const [rows] = await db.query(
+  `SELECT p.id, p.payment_type, p.period_year, p.period_month, p.period_quarter, p.amount,
+          p.payment_date, p.method, p.receipt_url, p.status, p.reject_reason, ${ON_TIME}
+   FROM payments p
+   LEFT JOIN contribution_settings cs ON cs.year = p.period_year
+   WHERE p.member_id = ?
+   ORDER BY p.period_year DESC, p.period_quarter DESC, p.period_month DESC`,
+  [memberId],
+);
   return rows;
 };
 
@@ -109,7 +128,7 @@ exports.review = async (id, { status, reviewer_id, reason }, db = pool) => {
   return r.affectedRows > 0;
 };
 
-// Active members with no approved payment covering this month
+// Active members with no approved MONTHLY payment for this month
 exports.unpaid = async (year, month, db = pool) => {
   const [rows] = await db.query(
     `SELECT m.id, m.full_name, m.phone FROM members m
@@ -123,16 +142,16 @@ exports.unpaid = async (year, month, db = pool) => {
   return rows;
 };
 
-// Active members with no approved yearly payment
-exports.unpaidYearly = async (year, db = pool) => {
+// Active members with no approved YEARLY installment for this quarter
+exports.unpaidYearly = async (year, quarter, db = pool) => {
   const [rows] = await db.query(
     `SELECT m.id, m.full_name, m.phone FROM members m
      WHERE m.status = 'active' AND NOT EXISTS (
        SELECT 1 FROM payments p
-       WHERE p.member_id = m.id AND p.status = 'approved'
-         AND p.period_year = ? AND p.payment_type = 'yearly')
+       WHERE p.member_id = m.id AND p.status = 'approved' AND p.period_year = ?
+         AND p.payment_type = 'yearly' AND p.period_quarter = ?)
      ORDER BY m.full_name`,
-    [year],
+    [year, quarter],
   );
   return rows;
 };

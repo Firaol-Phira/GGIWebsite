@@ -12,7 +12,7 @@ export default function Contribute({ type }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [info, setInfo] = useState(null);
   const [f, setF] = useState({
-    month: "",
+    period: "",
     method: "cbe",
     date: today(),
     url: "",
@@ -25,7 +25,7 @@ export default function Contribute({ type }) {
 
   useEffect(() => {
     setInfo(null);
-    setF((x) => ({ ...x, month: "" }));
+    setF((x) => ({ ...x, period: "" }));
     api
       .get("/payments/my-status", { params: { year } })
       .then(({ data }) => setInfo(data))
@@ -33,11 +33,14 @@ export default function Contribute({ type }) {
   }, [year, type]);
 
   const ready = info?.configured;
-  const freeMonths = ready ? info.months.filter((m) => !m.status) : [];
-  const allowed = ready && (yearly ? !info.yearly : freeMonths.length > 0);
+  const free = !ready
+    ? []
+    : yearly
+      ? (info.quarters || []).filter((q) => !q.status)
+      : (info.months || []).filter((m) => !m.status);
   const amount = ready
     ? yearly
-      ? info.yearly_amount
+      ? info.quarter_amount
       : info.monthly_amount
     : 0;
 
@@ -49,7 +52,7 @@ export default function Contribute({ type }) {
       const { data } = await api.post("/payments/submit", {
         payment_type: type,
         period_year: year,
-        period_month: yearly ? undefined : f.month,
+        ...(yearly ? { period_quarter: f.period } : { period_month: f.period }),
         method: f.method,
         payment_date: f.date,
         receipt_url: f.url,
@@ -69,7 +72,7 @@ export default function Contribute({ type }) {
         <i className="bi bi-hourglass-split display-4 text-warning" />
         <h2 className="h4 mt-3">Payment submitted</h2>
         <p className="text-muted">
-          Your {type} payment of{" "}
+          Your payment of{" "}
           <strong>{Number(done.amount).toLocaleString()} birr</strong> is
           waiting for review. It counts as paid only after finance approves it.
         </p>
@@ -83,8 +86,8 @@ export default function Contribute({ type }) {
     <>
       <h1 className="h3 ggi-page-title mb-4">
         {yearly
-          ? `Your yearly payment for ${year} is already paid or in review.`
-          : `Every month of ${year} is already paid or in review.`}
+          ? "Pay yearly contribution (quarter)"
+          : "Pay monthly contribution"}
       </h1>
       {error && <div className="alert alert-danger">{error}</div>}
       {info && !ready && (
@@ -92,15 +95,14 @@ export default function Contribute({ type }) {
           Amounts for {year} have not been set yet.
         </div>
       )}
-      {ready && !allowed && (
+      {ready && !free.length && (
         <div className="alert alert-warning">
-          {yearly
-            ? `A yearly payment is only possible when no month of ${year} is paid or in review.`
-            : `Every month of ${year} is already paid or in review.`}
+          Every {yearly ? "quarter" : "month"} of {year} is already paid or in
+          review.
         </div>
       )}
 
-      {allowed && (
+      {ready && free.length > 0 && (
         <div className="row g-4">
           <div className="col-12 col-lg-5">
             <div className="card ggi-panel ggi-pay-card h-100">
@@ -108,7 +110,7 @@ export default function Contribute({ type }) {
                 <h2 className="h5 fw-bold">Step 1: Send the money</h2>
                 <div className="ggi-amount-box my-3">
                   <div className="small">
-                    Amount to pay{yearly && " (covers all 12 months)"}
+                    Amount to pay{yearly && " (25% of the yearly amount)"}
                   </div>
                   <div className="value">
                     {Number(amount).toLocaleString()} birr
@@ -149,24 +151,30 @@ export default function Contribute({ type }) {
                     </select>
                   </div>
 
-                  {!yearly && (
-                    <div className="col-6">
-                      <label className="form-label fw-semibold">Month</label>
-                      <select
-                        className="form-select"
-                        value={f.month}
-                        onChange={set("month")}
-                        required
-                      >
-                        <option value="">Choose a month</option>
-                        {freeMonths.map((m) => (
-                          <option key={m.month} value={m.month}>
-                            {MONTHS[m.month - 1]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+                  <div className="col-6">
+                    <label className="form-label fw-semibold">
+                      {yearly ? "Quarter" : "Month"}
+                    </label>
+                    <select
+                      className="form-select"
+                      value={f.period}
+                      onChange={set("period")}
+                      required
+                    >
+                      <option value="">Choose</option>
+                      {yearly
+                        ? free.map((q) => (
+                            <option key={q.quarter} value={q.quarter}>
+                              Quarter {q.quarter}
+                            </option>
+                          ))
+                        : free.map((m) => (
+                            <option key={m.month} value={m.month}>
+                              {MONTHS[m.month - 1]}
+                            </option>
+                          ))}
+                    </select>
+                  </div>
 
                   <div className="col-6">
                     <label className="form-label fw-semibold">Paid with</label>

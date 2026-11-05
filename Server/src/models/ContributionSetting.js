@@ -15,14 +15,22 @@ exports.findByYear = async (year, db = pool) => {
   return rows[0];
 };
 
-exports.upsert = (
-  { year, monthly_amount, yearly_amount, updated_by },
-  db = pool,
-) =>
+exports.upsert = (s, db = pool) =>
   db.query(
-    `INSERT INTO contribution_settings (year, monthly_amount, yearly_amount, updated_by)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO contribution_settings
+       (year, monthly_amount, yearly_amount, q1_due, q2_due, q3_due, q4_due, updated_by)
+     VALUES (?,?,?,?,?,?,?,?)
      ON DUPLICATE KEY UPDATE monthly_amount = VALUES(monthly_amount),
-       yearly_amount = VALUES(yearly_amount), updated_by = VALUES(updated_by)`,
-    [year, monthly_amount, yearly_amount, updated_by],
+       yearly_amount = VALUES(yearly_amount), q1_due = VALUES(q1_due), q2_due = VALUES(q2_due),
+       q3_due = VALUES(q3_due), q4_due = VALUES(q4_due), updated_by = VALUES(updated_by)`,
+    [
+      s.year,
+      s.monthly_amount,
+      s.yearly_amount,
+      s.q1_due,
+      s.q2_due,
+      s.q3_due,
+      s.q4_due,
+      s.updated_by,
+    ],
   );

@@ -1,0 +1,53 @@
+.news-page { background: var(--ggi-bg, #f8f9fb); min-height: 60vh; }
+.news-title { color: var(--ggi-navy, #102c57); font-weight: 800; font-size: clamp(1.7rem, 4vw, 2.4rem); }
+
+/* Card + entrance animation */
+.news-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border-left: 5px solid transparent;
+  box-shadow: 0 2px 10px rgba(16, 44, 87, .08);
+  opacity: 0;
+  animation: newsFadeUp .5s ease forwards;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.news-card:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(16, 44, 87, .15); }
+
+/* Pinned */
+.news-card.pinned { border-left-color: var(--ggi-gold, #d4af37); background: #fffaf0; }
+
+@keyframes newsFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Badges */
+.news-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+.news-badge { padding: .25rem .7rem; border-radius: 99px; font-size: .78rem; font-weight: 600; color: #fff; }
+.news-badge-green { background: var(--ggi-green, #00a86b); }
+.news-badge-navy  { background: var(--ggi-navy, #102c57); }
+.news-badge-grey  { background: #6b7280; }
+.news-badge-gold  { background: var(--ggi-gold, #d4af37); color: var(--ggi-navy, #102c57); }
+
+/* Text */
+.news-card-title { color: var(--ggi-navy, #102c57); font-size: 1.25rem; font-weight: 700; margin-bottom: .6rem; }
+.news-body { flex-grow: 1; white-space: pre-wrap; color: #2d3748; line-height: 1.7; }
+
+/* Footer */
+.news-footer {
+  display: flex; flex-wrap: wrap; gap: .5rem;
+  justify-content: space-between; align-items: center;
+  border-top: 1px solid #edf0f5; padding-top: .75rem; margin-top: .5rem;
+}
+.news-join {
+  background: var(--ggi-navy, #102c57); color: var(--ggi-gold, #d4af37);
+  text-decoration: none; font-weight: 600; font-size: .85rem;
+  padding: .4rem 1rem; border-radius: 99px; transition: background .2s;
+}
+.news-join:hover { background: var(--ggi-navy-dark, #0b2147); color: #fff; }
+
+.news-empty { background: #fff; border-radius: 1rem; box-shadow: 0 2px 10px rgba(16, 44, 87, .08); }

@@ -1,0 +1,14 @@
+/* Secretary page */
+.ann-page .ann-form textarea { resize: vertical; min-height: 110px; }
+
+.ann-page .ann-form .form-control:focus,
+.ann-page .ann-form .form-select:focus {
+  border-color: var(--ggi-green);
+  box-shadow: 0 0 0 .2rem rgba(0, 168, 107, .2);
+}
+
+.ann-page .ann-table td:first-child { min-width: 220px; white-space: normal; }
+
+.ann-page .ann-actions { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: flex-end; }
+
+.ann-page .ann-pin { background: var(--ggi-gold); color: var(--ggi-navy); }

@@ -20,11 +20,15 @@ const cleanUrl = (raw) => {
   }
 };
 
+// A quarterly installment is 25% of the yearly amount
+const quarterAmount = (yearly) => Math.round(Number(yearly) * 25) / 100;
+
 // Returns [errorCode, message] or [null, dataToSave]
 const prepare = async (b, memberId, methods) => {
   const type = b.payment_type;
   const year = Number(b.period_year);
   const month = type === "monthly" ? Number(b.period_month) : null;
+  const quarter = type === "yearly" ? Number(b.period_quarter) : null;
 
   if (
     !["monthly", "yearly"].includes(type) ||
@@ -35,6 +39,8 @@ const prepare = async (b, memberId, methods) => {
     return [400, "Payment type, year, date and a valid method are required"];
   if (type === "monthly" && !(month >= 1 && month <= 12))
     return [400, "Choose the month you are paying for"];
+  if (type === "yearly" && !(quarter >= 1 && quarter <= 4))
+    return [400, "Choose the quarter you are paying for"];
   if (new Date(b.payment_date) > new Date())
     return [400, "Payment date cannot be in the future"];
 
@@ -50,13 +56,23 @@ const prepare = async (b, memberId, methods) => {
   if (!setting)
     return [400, `Contribution amounts for ${year} have not been set yet`];
 
-  if (await Payment.findDuplicate({ member_id: memberId, year, type, month }))
+  if (
+    await Payment.findDuplicate({
+      member_id: memberId,
+      year,
+      type,
+      month,
+      quarter,
+    })
+  )
     return [409, "A payment already exists for this period"];
   if (receipt_url && (await Payment.findByReceiptUrl(receipt_url)))
     return [409, "This receipt link was already used"];
 
   const amount =
-    type === "monthly" ? setting.monthly_amount : setting.yearly_amount;
+    type === "monthly"
+      ? setting.monthly_amount
+      : quarterAmount(setting.yearly_amount);
   return [
     null,
     {
@@ -64,6 +80,7 @@ const prepare = async (b, memberId, methods) => {
       payment_type: type,
       period_year: year,
       period_month: month,
+      period_quarter: quarter,
       amount,
       payment_date: b.payment_date,
       method: b.method,
@@ -142,20 +159,26 @@ exports.myStatus = async (req, res, next) => {
     const rows = req.user.member_id
       ? await Payment.coverage(req.user.member_id, year)
       : [];
-    const yearly = rows.find((r) => r.payment_type === "yearly");
-   const months = Array.from({ length: 12 }, (_, i) => {
-     const hit = rows.find(
-       (r) => r.payment_type === "monthly" && r.period_month === i + 1,
-     );
-     return { month: i + 1, status: hit ? hit.status : null };
-   });
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const hit = rows.find(
+        (r) => r.payment_type === "monthly" && r.period_month === i + 1,
+      );
+      return { month: i + 1, status: hit ? hit.status : null };
+    });
+    const quarters = [1, 2, 3, 4].map((q) => {
+      const hit = rows.find(
+        (r) => r.payment_type === "yearly" && r.period_quarter === q,
+      );
+      return { quarter: q, status: hit ? hit.status : null };
+    });
     res.json({
       year,
       configured: true,
       monthly_amount: setting.monthly_amount,
       yearly_amount: setting.yearly_amount,
-      yearly: yearly ? yearly.status : null,
+      quarter_amount: quarterAmount(setting.yearly_amount),
       months,
+      quarters,
     });
   } catch (err) {
     next(err);
@@ -210,21 +233,28 @@ const review = (newStatus) => async (req, res, next) => {
 exports.approvePayment = review("approved");
 exports.rejectPayment = review("rejected");
 
-// GET /api/payments/unpaid?year=2026&month=11   (leave out month for the yearly report)
+// GET /api/payments/unpaid?year=2026&month=11   (monthly report)
+// GET /api/payments/unpaid?year=2026&quarter=2  (yearly installment report)
 exports.unpaid = async (req, res, next) => {
   try {
     const year = Number(req.query.year);
     const month = Number(req.query.month) || null;
-    if (!year || (month && (month < 1 || month > 12)))
+    const quarter = Number(req.query.quarter) || null;
+    if (
+      !year ||
+      (!month && !quarter) ||
+      (month && (month < 1 || month > 12)) ||
+      (quarter && (quarter < 1 || quarter > 4))
+    )
       return res
         .status(400)
         .json({
-          message: "A valid year (and optional month 1-12) is required",
+          message: "A year and a month (1-12) or quarter (1-4) are required",
         });
-    const members = month
-      ? await Payment.unpaid(year, month)
-      : await Payment.unpaidYearly(year);
-    res.json({ year, month, count: members.length, members });
+    const members = quarter
+      ? await Payment.unpaidYearly(year, quarter)
+      : await Payment.unpaid(year, month);
+    res.json({ year, month, quarter, count: members.length, members });
   } catch (err) {
     next(err);
   }

@@ -2,9 +2,11 @@ const pool = require("../config/db");
 
 exports.listPublished = async (limit, offset, db = pool) => {
   const [rows] = await db.query(
-    `SELECT id, title, slug, cover_image, published_at, LEFT(content, 200) AS excerpt
-     FROM announcements WHERE status = 'published'
-     ORDER BY published_at DESC LIMIT ? OFFSET ?`,
+    `SELECT a.id, a.title, a.slug, a.content, a.category, a.meeting_link, a.is_pinned,
+            a.published_at, u.full_name AS author
+     FROM announcements a JOIN users u ON u.id = a.author_id
+     WHERE a.status = 'published'
+     ORDER BY a.is_pinned DESC, a.published_at DESC LIMIT ? OFFSET ?`,
     [limit, offset],
   );
   return rows;
@@ -19,8 +21,8 @@ exports.countPublished = async (db = pool) => {
 
 exports.findPublishedBySlug = async (slug, db = pool) => {
   const [rows] = await db.query(
-    `SELECT a.id, a.title, a.slug, a.content, a.cover_image, a.published_at,
-            u.full_name AS author
+    `SELECT a.id, a.title, a.slug, a.content, a.category, a.meeting_link, a.is_pinned,
+            a.published_at, u.full_name AS author
      FROM announcements a JOIN users u ON u.id = a.author_id
      WHERE a.slug = ? AND a.status = 'published'`,
     [slug],
@@ -30,7 +32,7 @@ exports.findPublishedBySlug = async (slug, db = pool) => {
 
 exports.listAll = async (status, db = pool) => {
   const [rows] = await db.query(
-    `SELECT a.id, a.title, a.slug, a.status, a.cover_image, a.published_at,
+    `SELECT a.id, a.title, a.slug, a.status, a.category, a.is_pinned, a.published_at,
             a.created_at, u.full_name AS author
      FROM announcements a JOIN users u ON u.id = a.author_id
      ${status ? "WHERE a.status = ?" : ""}
@@ -47,19 +49,29 @@ exports.findById = async (id, db = pool) => {
   return rows[0];
 };
 
-exports.create = async ({ title, slug, content, author_id }, db = pool) => {
+exports.create = async (a, db = pool) => {
   const [r] = await db.query(
-    "INSERT INTO announcements (title, slug, content, author_id) VALUES (?, ?, ?, ?)",
-    [title, slug, content, author_id],
+    `INSERT INTO announcements (title, slug, content, category, meeting_link, is_pinned, author_id)
+     VALUES (?,?,?,?,?,?,?)`,
+    [
+      a.title,
+      a.slug,
+      a.content,
+      a.category,
+      a.meeting_link,
+      a.is_pinned ? 1 : 0,
+      a.author_id,
+    ],
   );
   return r.insertId;
 };
 
-exports.update = async (id, { title, content }, db = pool) => {
+exports.update = async (id, a, db = pool) => {
   const [r] = await db.query(
-    `UPDATE announcements SET title = COALESCE(?, title), content = COALESCE(?, content)
+    `UPDATE announcements
+     SET title = ?, content = ?, category = ?, meeting_link = ?, is_pinned = ?
      WHERE id = ?`,
-    [title ?? null, content ?? null, id],
+    [a.title, a.content, a.category, a.meeting_link, a.is_pinned ? 1 : 0, id],
   );
   return r.affectedRows > 0;
 };

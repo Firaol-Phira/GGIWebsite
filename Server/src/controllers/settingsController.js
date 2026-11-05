@@ -21,13 +21,17 @@ exports.setContribution = async (req, res, next) => {
         message: "Valid year, monthly_amount and yearly_amount are required",
       });
     }
-
-    await ContributionSetting.upsert({
-      year,
-      monthly_amount: monthly,
-      yearly_amount: yearly,
-      updated_by: req.user.id,
-    });
+const d = (k) => req.body[k] || null;
+await ContributionSetting.upsert({
+  year,
+  monthly_amount: monthly,
+  yearly_amount: yearly,
+  q1_due: d("q1_due"),
+  q2_due: d("q2_due"),
+  q3_due: d("q3_due"),
+  q4_due: d("q4_due"),
+  updated_by: req.user.id,
+});
     await logAction(
       req.user.id,
       "SETTINGS_UPDATED",

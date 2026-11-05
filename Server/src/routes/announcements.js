@@ -5,7 +5,7 @@ const c = require("../controllers/announcementController");
 // Public: anyone can read published news
 router.get("/", c.listPublished);
 
-// Secretary (and admin read-only): must come BEFORE '/:slug'
+// Secretary (admin read-only). These must come BEFORE "/:slug"
 router.get(
   "/manage/all",
   protect,
@@ -21,6 +21,7 @@ router.get(
 
 router.get("/:slug", c.getPublished);
 
+// Secretary only
 router.post("/", protect, authorizeRoles("secretary"), c.create);
 router.patch("/:id", protect, authorizeRoles("secretary"), c.update);
 router.patch("/:id/publish", protect, authorizeRoles("secretary"), c.publish);

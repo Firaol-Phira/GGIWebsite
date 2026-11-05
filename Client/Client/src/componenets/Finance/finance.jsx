@@ -10,18 +10,64 @@ const TABS = [
   ["amounts", "Amounts"],
 ];
 const thisYear = new Date().getFullYear();
+const EMPTY = {
+  year: thisYear,
+  monthly_amount: "",
+  yearly_amount: "",
+  q1_due: "",
+  q2_due: "",
+  q3_due: "",
+  q4_due: "",
+};
+
+function Timing({ p }) {
+  if (p.status === "rejected") return null;
+  if (p.on_time === null || p.on_time === undefined) return "-";
+  return (
+    <span className={`badge text-bg-${p.on_time ? "success" : "danger"}`}>
+      {p.on_time ? "On time" : "Late"}
+    </span>
+  );
+}
+
+function Table({ head, empty, emptyText = "No data yet", children }) {
+  return (
+    <div className="card ggi-panel">
+      <div className="table-responsive">
+        <table className="table table-hover align-middle mb-0 ggi-table">
+          <thead>
+            <tr>
+              {head.map((h, i) => (
+                <th key={i}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {empty && (
+              <tr>
+                <td
+                  colSpan={head.length}
+                  className="text-center text-muted py-4"
+                >
+                  {emptyText}
+                </td>
+              </tr>
+            )}
+            {children}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 export default function Finance() {
   const [tab, setTab] = useState("monthly");
   const [status, setStatus] = useState("pending");
   const [rows, setRows] = useState([]);
   const [year, setYear] = useState(thisYear);
-  const [month, setMonth] = useState(new Date().getMonth() + 1); // 0 = yearly report
-  const [form, setForm] = useState({
-    year: thisYear,
-    monthly_amount: "",
-    yearly_amount: "",
-  });
+  const [period, setPeriod] = useState(`m${new Date().getMonth() + 1}`); // m1..m12 or q1..q4
+  const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
 
@@ -30,15 +76,16 @@ export default function Finance() {
     try {
       if (tab === "amounts")
         setRows((await api.get("/settings/contributions")).data.settings);
-      else if (tab === "unpaid")
+      else if (tab === "unpaid") {
+        const key = period[0] === "q" ? "quarter" : "month";
         setRows(
           (
             await api.get("/payments/unpaid", {
-              params: { year, month: month || undefined },
+              params: { year, [key]: period.slice(1) },
             })
           ).data.members,
         );
-      else
+      } else {
         setRows(
           (
             await api.get("/payments", {
@@ -49,13 +96,14 @@ export default function Finance() {
             })
           ).data.payments,
         );
+      }
     } catch (err) {
       setError(errorMessage(err));
     }
   };
   useEffect(() => {
     load();
-  }, [tab, status, year, month]);
+  }, [tab, status, year, period]);
 
   const go = (key) => {
     setRows([]);
@@ -85,17 +133,27 @@ export default function Finance() {
     setError("");
     setOk("");
     try {
-      await api.put(`/settings/contributions/${form.year}`, {
-        monthly_amount: form.monthly_amount,
-        yearly_amount: form.yearly_amount,
-      });
+      await api.put(`/settings/contributions/${form.year}`, form);
       setOk(`Amounts for ${form.year} saved`);
       load();
     } catch (err) {
       setError(errorMessage(err));
     }
   };
+
   const f = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  const quarter = form.yearly_amount
+    ? (Number(form.yearly_amount) / 4).toLocaleString()
+    : "-";
+  const edit = (s) =>
+    setForm({
+      ...EMPTY,
+      ...s,
+      q1_due: s.q1_due || "",
+      q2_due: s.q2_due || "",
+      q3_due: s.q3_due || "",
+      q4_due: s.q4_due || "",
+    });
 
   return (
     <>
@@ -141,7 +199,7 @@ export default function Finance() {
                   required
                 />
               </div>
-              <div className="col-4 col-md-3">
+              <div className="col-4 col-md-3 " >
                 <label className="form-label fw-semibold">Yearly (birr)</label>
                 <input
                   type="number"
@@ -151,28 +209,58 @@ export default function Finance() {
                   onChange={f("yearly_amount")}
                   required
                 />
+               
               </div>
-              <div className="col-12 col-md-4">
+              <div className="col-12 d-none d-md-block col-md-4" />
+
+              {[1, 2, 3, 4].map((q) => (
+                <div className="col-6 col-md-3" key={q}>
+                  <label className="form-label fw-semibold">
+                    Quarter {q} due date
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={form[`q${q}_due`] || ""}
+                    onChange={f(`q${q}_due`)}
+                  />
+                </div>
+              ))}
+
+              <div className="col-12">
                 <button className="btn ggi-btn-green">Save amounts</button>
               </div>
             </div>
           </form>
-          <Table head={["Year", "Monthly", "Yearly", ""]} empty={!rows.length}>
+
+          <Table
+            head={[
+              "Year",
+              "Monthly",
+              "Yearly",
+              "Per quarter",
+              "Q1 due",
+              "Q2 due",
+              "Q3 due",
+              "Q4 due",
+              "",
+            ]}
+            empty={!rows.length}
+          >
             {rows.map((s) => (
               <tr key={s.year}>
                 <td>{s.year}</td>
                 <td>{Number(s.monthly_amount).toLocaleString()}</td>
                 <td>{Number(s.yearly_amount).toLocaleString()}</td>
+                <td>{(Number(s.yearly_amount) / 4).toLocaleString()}</td>
+                {[1, 2, 3, 4].map((q) => (
+                  <td key={q}>{s[`q${q}_due`] || "-"}</td>
+                ))}
                 <td>
                   <button
+                    type="button"
                     className="btn btn-sm btn-outline-secondary"
-                    onClick={() =>
-                      setForm({
-                        year: s.year,
-                        monthly_amount: s.monthly_amount,
-                        yearly_amount: s.yearly_amount,
-                      })
-                    }
+                    onClick={() => edit(s)}
                   >
                     Edit
                   </button>
@@ -188,15 +276,23 @@ export default function Finance() {
           <div className="d-flex gap-2 mb-3">
             <select
               className="form-select w-auto"
-              value={month}
-              onChange={(e) => setMonth(Number(e.target.value))}
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
             >
-              <option value={0}>Yearly payment</option>
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i + 1}>
-                  {m}
-                </option>
-              ))}
+              <optgroup label="Monthly">
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={`m${i + 1}`}>
+                    {m}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Yearly">
+                {[1, 2, 3, 4].map((q) => (
+                  <option key={q} value={`q${q}`}>
+                    Quarter {q}
+                  </option>
+                ))}
+              </optgroup>
             </select>
             <input
               type="number"
@@ -239,7 +335,7 @@ export default function Finance() {
           <Table
             head={[
               "Member",
-              tab === "monthly" ? "Month" : "Year",
+              tab === "monthly" ? "Month" : "Quarter",
               "Amount",
               "Method",
               "Paid on",
@@ -261,17 +357,13 @@ export default function Finance() {
                 <td>
                   {tab === "monthly"
                     ? `${MONTHS[p.period_month - 1]} ${p.period_year}`
-                    : p.period_year}
+                    : `Quarter ${p.period_quarter} (${p.period_year})`}
                 </td>
                 <td>{Number(p.amount).toLocaleString()}</td>
                 <td className="text-uppercase">{p.method}</td>
                 <td>{new Date(p.payment_date).toLocaleDateString()}</td>
                 <td>
-                  <span
-                    className={`badge text-bg-${p.on_time ? "success" : "danger"}`}
-                  >
-                    {p.on_time ? "On time" : "Late"}
-                  </span>
+                  <Timing p={p} />
                 </td>
                 <td>
                   {p.receipt_url ? (
@@ -321,36 +413,5 @@ export default function Finance() {
         </>
       )}
     </>
-  );
-}
-
-function Table({ head, empty, emptyText = "No data yet", children }) {
-  return (
-    <div className="card ggi-panel">
-      <div className="table-responsive">
-        <table className="table table-hover align-middle mb-0 ggi-table">
-          <thead>
-            <tr>
-              {head.map((h, i) => (
-                <th key={i}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {empty && (
-              <tr>
-                <td
-                  colSpan={head.length}
-                  className="text-center text-muted py-4"
-                >
-                  {emptyText}
-                </td>
-              </tr>
-            )}
-            {children}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }

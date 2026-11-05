@@ -1,6 +1,14 @@
 const Announcement = require("../models/Announcement");
 const { logAction } = require("../utils/audit");
 
+const CATEGORIES = [
+  "general",
+  "monthly_rate",
+  "yearly_rate",
+  "committee_meeting",
+  "general_meeting",
+];
+
 // Amharic titles give an empty slug, so a unique suffix is always added
 const makeSlug = (title) => {
   const base = title
@@ -10,6 +18,27 @@ const makeSlug = (title) => {
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
   return `${base || "news"}-${Date.now().toString(36)}`;
+};
+
+// Returns [error] or [null, cleanData]
+const clean = (b) => {
+  const title = (b.title || "").trim();
+  const content = (b.content || "").trim();
+  if (!title || !content) return ["title and content are required"];
+  const category = CATEGORIES.includes(b.category) ? b.category : "general";
+  const meeting_link = (b.meeting_link || "").trim() || null;
+  if (meeting_link) {
+    try {
+      if (new URL(meeting_link).protocol !== "https:")
+        return ["The meeting link must start with https://"];
+    } catch {
+      return ["The meeting link is not valid"];
+    }
+  }
+  return [
+    null,
+    { title, content, category, meeting_link, is_pinned: !!b.is_pinned },
+  ];
 };
 
 // ---------- PUBLIC (no login) ----------
@@ -58,43 +87,38 @@ exports.getOne = async (req, res, next) => {
 
 exports.create = async (req, res, next) => {
   try {
-    const { title, content } = req.body;
-    if (!title || !content) {
-      return res
-        .status(400)
-        .json({ message: "title and content are required" });
-    }
+    const [err, data] = clean(req.body);
+    if (err) return res.status(400).json({ message: err });
     const id = await Announcement.create({
-      title,
-      slug: makeSlug(title),
-      content,
+      ...data,
+      slug: makeSlug(data.title),
       author_id: req.user.id,
     });
     await logAction(req.user.id, "ANNOUNCEMENT_CREATED", "announcement", id);
     res.status(201).json({ id, status: "draft" });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
 };
 
 exports.update = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const found = await Announcement.update(id, req.body);
-    if (!found)
+    const [err, data] = clean(req.body);
+    if (err) return res.status(400).json({ message: err });
+    if (!(await Announcement.update(id, data)))
       return res.status(404).json({ message: "Announcement not found" });
     await logAction(req.user.id, "ANNOUNCEMENT_UPDATED", "announcement", id);
     res.json({ message: "Updated" });
-  } catch (err) {
-    next(err);
+  } catch (e) {
+    next(e);
   }
 };
 
 const setStatus = (status) => async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const found = await Announcement.setStatus(id, status);
-    if (!found)
+    if (!(await Announcement.setStatus(id, status)))
       return res.status(404).json({ message: "Announcement not found" });
     await logAction(
       req.user.id,
@@ -115,8 +139,7 @@ exports.unpublish = setStatus("draft");
 exports.remove = async (req, res, next) => {
   try {
     const id = Number(req.params.id);
-    const found = await Announcement.remove(id);
-    if (!found)
+    if (!(await Announcement.remove(id)))
       return res.status(404).json({ message: "Announcement not found" });
     await logAction(req.user.id, "ANNOUNCEMENT_DELETED", "announcement", id);
     res.json({ message: "Deleted" });

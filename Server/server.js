@@ -20,7 +20,7 @@ app.use("/api/users", require("./src/routes/users"));
 app.use("/api/members", require("./src/routes/members"));
 app.use("/api/settings", require("./src/routes/settings"));
 app.use("/api/payments", require("./src/routes/payments"));
-
+app.use("/api/contact", require("./src/routes/contact"));
 
 app.use(errorHandler);
 app.use("/api/announcements", require("./src/routes/announcements"));

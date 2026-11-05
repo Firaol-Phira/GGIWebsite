@@ -1,0 +1,67 @@
+/* ---------- Page ---------- */
+.contact-page { background: var(--ggi-bg, #f8f9fb); }
+.contact-page .bg-offwhite { background: var(--ggi-bg, #f8f9fb); }
+
+/* ---------- Hero ---------- */
+.contact-hero {
+  background: var(--ggi-navy, #102c57);
+  position: relative;
+  overflow: hidden;
+}
+.contact-hero::after {
+  content: "";
+  position: absolute; top: -120px; right: -90px;
+  width: 300px; height: 300px; border-radius: 50%;
+  background: #0f4a68; opacity: .7; pointer-events: none;
+}
+.contact-hero .container { position: relative; z-index: 1; }
+.contact-subtitle-badge {
+  border: 1px solid var(--ggi-gold, #d4af37);
+  color: var(--ggi-gold, #d4af37);
+  background: rgba(255, 255, 255, .06);
+  border-radius: 99px;
+  padding: .4rem 1.1rem;
+  font-size: .85rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+}
+.max-w-700 { max-width: 700px; }
+
+/* ---------- Colour helpers used by the page ---------- */
+.contact-page .text-gold { color: var(--ggi-gold, #d4af37) !important; }
+.contact-page .text-navy { color: var(--ggi-navy, #102c57) !important; }
+.contact-page .text-emerald { color: var(--ggi-green, #00a86b) !important; }
+.contact-page .bg-navy { background: var(--ggi-navy, #102c57) !important; }
+.contact-page .letter-spacing-1 { letter-spacing: .08em; }
+.contact-page .fs-7 { font-size: .9rem; }
+
+/* ---------- Info card ---------- */
+.contact-info-card { background: #fff; border-left: 5px solid var(--ggi-gold, #d4af37); }
+.info-icon-box {
+  width: 46px; height: 46px;
+  background: #e7f6ef;
+}
+
+/* ---------- Telegram box ---------- */
+.Telink { color: #fff; text-decoration: none; width: 100%; }
+.Telink:hover { color: #fff; opacity: .9; }
+
+/* ---------- Form ---------- */
+.send-message-card { border-top: 5px solid var(--ggi-green, #00a86b) !important; }
+.custom-input { background: #f3f6fc; border: 1px solid #e1e7f2; border-radius: .6rem; }
+.custom-input:focus {
+  background: #fff;
+  border-color: var(--ggi-green, #00a86b);
+  box-shadow: 0 0 0 .2rem rgba(0, 168, 107, .2);
+}
+
+.btn-navy-gold {
+  background: var(--ggi-navy, #102c57);
+  color: var(--ggi-gold, #d4af37);
+  border: 0;
+}
+.btn-navy-gold:hover:not(:disabled) { background: var(--ggi-navy-dark, #0b2147); color: #fff; }
+.btn-navy-gold:disabled { opacity: .7; color: var(--ggi-gold, #d4af37); }
+
+/* ---------- Success box ---------- */
+.alert-success-custom { background: #e7f6ef; border: 1px solid #9bd3ae; }
+.btn-emerald-action { background: var(--ggi-green, #00a86b); border: 0; }
+.btn-emerald-action:hover { background: #008f5a; color: #fff; }

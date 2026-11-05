@@ -14,6 +14,10 @@ import MemberPortal from "./componenets/memeber/member";
 import Contribute from "./componenets/contribute/contribute";
 import Finance from "./componenets/Finance/finance";
 import About from "./pages/About/About";
+import News from "./pages/News/News";
+import Announcements from "./componenets/secretary/Announcements";
+import Contact from "./pages/Contact/Contact";
+import Messages from "./componenets/Messages/Messages";
 
 const ComingSoon = ({ title }) => (
   <div className="text-center py-5">
@@ -29,6 +33,8 @@ export default function App() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/About" element={<About />} />
+        <Route path="/News" element={<News />} />
+        <Route path="/Contact" element={<Contact />} />
       </Route>
 
       {/* Login and change password */}
@@ -54,6 +60,7 @@ export default function App() {
       >
         <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
         <Route path="/admin/users" element={<Users />} />
+        <Route path="/admin/messages" element={<Messages />} />
       </Route>
 
       {/* Other dashboards (built next) */}
@@ -76,7 +83,7 @@ export default function App() {
       >
         <Route
           path="/secretary"
-          element={<ComingSoon title="Announcements" />}
+          element={<Announcements title="Announcements" />}
         />
       </Route>
 

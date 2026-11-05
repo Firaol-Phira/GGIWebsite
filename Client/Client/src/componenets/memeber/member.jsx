@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api, { errorMessage } from "../../services/api";
 import { useAuth } from "../../context/authocontext";
-import "./Member.css";
+import "./member.css";
 
 export const MONTHS = [
   "Jan",
@@ -23,6 +23,18 @@ const sum = (rows) =>
   rows
     .filter((p) => p.status === "approved")
     .reduce((s, p) => s + Number(p.amount), 0);
+const label = (s) =>
+  s === "approved" ? "Paid" : s === "pending" ? "In review" : "Not paid";
+
+function Timing({ p }) {
+  if (p.status === "rejected") return null;
+  if (p.on_time === null || p.on_time === undefined) return "-";
+  return (
+    <span className={`badge text-bg-${p.on_time ? "success" : "danger"}`}>
+      {p.on_time ? "On time" : "Late"}
+    </span>
+  );
+}
 
 function History({ title, rows, monthly }) {
   return (
@@ -57,19 +69,13 @@ function History({ title, rows, monthly }) {
                 <td>
                   {monthly
                     ? `${MONTHS[p.period_month - 1]} ${p.period_year}`
-                    : `Year ${p.period_year}`}
+                    : `Quarter ${p.period_quarter} (${p.period_year})`}
                 </td>
                 <td>{Number(p.amount).toLocaleString()}</td>
                 <td className="text-uppercase">{p.method}</td>
                 <td>{new Date(p.payment_date).toLocaleDateString()}</td>
                 <td>
-                  {p.status !== "rejected" && (
-                    <span
-                      className={`badge text-bg-${p.on_time ? "success" : "danger"}`}
-                    >
-                      {p.on_time ? "On time" : "Late"}
-                    </span>
-                  )}
+                  <Timing p={p} />
                 </td>
                 <td>
                   <span
@@ -124,9 +130,10 @@ export default function MemberPortal() {
   const monthly = payments.filter((p) => p.payment_type === "monthly");
   const yearly = payments.filter((p) => p.payment_type === "yearly");
   const pending = payments.filter((p) => p.status === "pending").length;
-  const free = info?.configured
-    ? info.months.filter((m) => !m.status).length
-    : 0;
+  const months = info?.months || [];
+  const quarters = info?.quarters || [];
+  const freeMonths = months.filter((m) => !m.status).length;
+  const freeQuarters = quarters.filter((q) => !q.status).length;
 
   return (
     <>
@@ -139,12 +146,12 @@ export default function MemberPortal() {
           ["Monthly paid", `${sum(monthly).toLocaleString()} birr`, "success"],
           ["Yearly paid", `${sum(yearly).toLocaleString()} birr`, "success"],
           ["Waiting for review", pending, "warning"],
-        ].map(([label, value, c]) => (
-          <div className="col-12 col-md-4" key={label}>
+        ].map(([l, v, c]) => (
+          <div className="col-12 col-md-4" key={l}>
             <div className="card ggi-panel h-100">
               <div className="card-body">
-                <div className="text-muted small">{label}</div>
-                <div className={`h3 fw-bold mb-0 text-${c}`}>{value}</div>
+                <div className="text-muted small">{l}</div>
+                <div className={`h3 fw-bold mb-0 text-${c}`}>{v}</div>
               </div>
             </div>
           </div>
@@ -177,32 +184,42 @@ export default function MemberPortal() {
 
       {info?.configured && (
         <div className="row g-4 mb-4">
-          {/* Yearly */}
-          <div className="col-12 col-lg-4">
+          {/* Yearly, paid in 4 quarters */}
+          <div className="col-12 col-lg-5">
             <div className="card ggi-panel ggi-pay-card h-100">
               <div className="card-body">
-                <h3 className="h5 fw-bold">Yearly contribution</h3>
-                <div className="h3 fw-bold text-success">
-                  {Number(info.yearly_amount).toLocaleString()} birr
+                <div className="d-flex justify-content-between align-items-start mb-3">
+                  <div>
+                    <h3 className="h5 fw-bold mb-0">Yearly contribution</h3>
+                    <div className="text-muted small">
+                      {Number(info.yearly_amount).toLocaleString()} birr, paid
+                      25% each quarter (
+                      {Number(info.quarter_amount).toLocaleString()} birr)
+                    </div>
+                  </div>
+                  {freeQuarters > 0 && (
+                    <Link to="/member/pay-yearly" className="btn ggi-btn-green">
+                      Pay quarter
+                    </Link>
+                  )}
                 </div>
-                <p className="text-muted small">
-                  Pay 25% of your yearly contribution quarterly.
-                </p>
-                {info.yearly ? (
-                  <span className={`badge text-bg-${COLOR[info.yearly]}`}>
-                    {info.yearly === "approved" ? "Paid" : "In review"}
-                  </span>
-                ) : (
-                  <Link to="/member/pay-yearly" className="btn ggi-btn-green">
-                    Pay yearly
-                  </Link>
-                )}
+                <div className="ggi-month-grid">
+                  {quarters.map((q) => (
+                    <div
+                      key={q.quarter}
+                      className={`ggi-month ${q.status || ""}`}
+                    >
+                      <strong>Quarter {q.quarter}</strong>
+                      <small>{label(q.status)}</small>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Monthly */}
-          <div className="col-12 col-lg-8">
+          <div className="col-12 col-lg-7">
             <div className="card ggi-panel h-100">
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-start mb-3">
@@ -213,7 +230,7 @@ export default function MemberPortal() {
                       month
                     </div>
                   </div>
-                  {free > 0 && (
+                  {freeMonths > 0 && (
                     <Link
                       to="/member/pay-monthly"
                       className="btn ggi-btn-green"
@@ -223,34 +240,26 @@ export default function MemberPortal() {
                   )}
                 </div>
                 <div className="ggi-month-grid">
-                  {info.months.map((m) => (
+                  {months.map((m) => (
                     <div
                       key={m.month}
                       className={`ggi-month ${m.status || ""}`}
                     >
                       <strong>{MONTHS[m.month - 1]}</strong>
-                      <small>
-                        {m.status === "approved"
-                          ? "Paid"
-                          : m.status === "pending"
-                            ? "In review"
-                            : "Not paid"}
-                      </small>
+                      <small>{label(m.status)}</small>
                     </div>
                   ))}
                 </div>
-                {info.yearly && (
-                  <div className="small text-muted mt-3">
-                    All months are covered by your yearly payment.
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      <History title="Yearly payment history" rows={yearly} />
+      <History
+        title="Yearly payment history (quarterly installments)"
+        rows={yearly}
+      />
       <History title="Monthly payment history" rows={monthly} monthly />
     </>
   );

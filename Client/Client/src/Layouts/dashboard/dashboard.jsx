@@ -1,26 +1,32 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Offcanvas } from "bootstrap";
+import api from "../../services/api";
 import { useAuth } from "../../context/authocontext";
 import "./Dashboard.css";
 
 const MENU = {
-  admin: [{ to: "/admin/users", label: "Users & Roles", icon: "bi-people" }],
+  admin: [
+    { to: "/admin/users", label: "Users & Roles", icon: "bi-people" },
+    {
+      to: "/admin/messages",
+      label: "Messages",
+      icon: "bi-envelope",
+      badge: true,
+    },
+  ],
   finance: [{ to: "/finance", label: "Payments", icon: "bi-cash-coin" }],
   secretary: [
     { to: "/secretary", label: "Announcements", icon: "bi-megaphone" },
   ],
   member: [{ to: "/member", label: "My Payments", icon: "bi-receipt" }],
 };
-const MEMBER_LINK = {
-  to: "/member",
-  label: "Member portal",
-  icon: "bi-person-badge",
-};
+
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [unread, setUnread] = useState(0);
 
   // Close the mobile menu after choosing a page
   useEffect(() => {
@@ -29,6 +35,15 @@ export default function DashboardLayout() {
     if (instance) instance.hide();
   }, [pathname]);
 
+  // Admin only: count of new contact messages (refreshes on every page change)
+  useEffect(() => {
+    if (user.role !== "admin") return;
+    api
+      .get("/contact", { params: { status: "new" } })
+      .then(({ data }) => setUnread(data.unread))
+      .catch(() => {});
+  }, [pathname, user.role]);
+
   const signOut = () => {
     logout();
     navigate("/login");
@@ -36,7 +51,6 @@ export default function DashboardLayout() {
 
   return (
     <div className="ggi-dash d-lg-flex">
-      {/* Sidebar: static on large screens, slide-in menu on small ones */}
       <aside
         className="offcanvas-lg offcanvas-start ggi-sidebar-wrap"
         tabIndex="-1"
@@ -58,20 +72,31 @@ export default function DashboardLayout() {
 
           <nav className="nav flex-column px-2 flex-grow-1">
             {(MENU[user.role] || []).map((m) => (
-              <NavLink key={m.to} to={m.to} className="ggi-side-link">
+              <NavLink
+                key={m.to}
+                to={m.to}
+                className="ggi-side-link d-flex align-items-center"
+              >
                 <i className={`bi ${m.icon} me-2`} />
                 {m.label}
+                {m.badge && unread > 0 && (
+                  <span className="badge rounded-pill text-bg-danger ms-auto">
+                    {unread}
+                  </span>
+                )}
               </NavLink>
             ))}
+
             {user.role !== "member" && (
               <>
                 <div className="ggi-side-heading">As a member</div>
-                <NavLink to={MEMBER_LINK.to} className="ggi-side-link">
-                  <i className={`bi ${MEMBER_LINK.icon} me-2`} />
-                  {MEMBER_LINK.label}
+                <NavLink to="/member" className="ggi-side-link">
+                  <i className="bi bi-person-badge me-2" />
+                  Member portal
                 </NavLink>
               </>
             )}
+
             <NavLink to="/change-password" className="ggi-side-link">
               <i className="bi bi-key me-2" />
               Change password
@@ -87,7 +112,6 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* Main area */}
       <div className="ggi-dash-main flex-grow-1">
         <header className="ggi-topbar d-flex align-items-center justify-content-between px-3 px-lg-4 py-3">
           <div className="d-flex align-items-center gap-2">
