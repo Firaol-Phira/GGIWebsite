@@ -25,6 +25,12 @@ app.use("/api/contact", require("./src/routes/contact"));
 // Only the gallery folder is public
 app.use("/uploads/gallery", express.static(path.join(__dirname, "uploads", "gallery"), { maxAge: "7d" }));
 app.use("/api/gallery", require("./src/routes/gallery"));
+app.use(
+  "/uploads/projects",
+  express.static(path.join(__dirname, "uploads", "projects"), { maxAge: "7d" }),
+);
+app.use("/api/projects", require("./src/routes/projects"));
+
 app.use(errorHandler);
 app.use("/api/announcements", require("./src/routes/announcements"));
 

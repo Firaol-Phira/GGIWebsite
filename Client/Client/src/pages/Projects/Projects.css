@@ -1,0 +1,48 @@
+.projects-page { background: var(--ggi-bg, #f8f9fb); min-height: 60vh; }
+.projects-title { color: var(--ggi-navy, #102c57); font-weight: 800; font-size: clamp(1.7rem, 4vw, 2.4rem); }
+.projects-empty { background: #fff; border-radius: 1rem; box-shadow: 0 2px 10px rgba(16, 44, 87, .08); }
+
+.project-card {
+  height: 100%; display: flex; flex-direction: column; background: #fff;
+  border-radius: 1rem; overflow: hidden; box-shadow: 0 2px 10px rgba(16, 44, 87, .08);
+  opacity: 0; animation: projectIn .5s ease forwards;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.project-card:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(16, 44, 87, .16); }
+@keyframes projectIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.project-img {
+  position: relative; aspect-ratio: 16 / 10; background: #dfe5f0;
+  display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #9aa7bf;
+}
+.project-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.project-status {
+  position: absolute; top: .75rem; left: .75rem; color: #fff; font-size: .78rem; font-weight: 700;
+  padding: .25rem .75rem; border-radius: 99px;
+}
+.project-status.static { position: static; display: inline-block; }
+.pj-planned { background: #6b7280; }
+.pj-ongoing { background: var(--ggi-green, #00a86b); }
+.pj-completed { background: var(--ggi-navy, #102c57); }
+
+.project-body { padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }
+.project-body h2 { font-size: 1.15rem; font-weight: 700; color: var(--ggi-navy, #102c57); }
+.project-body p { color: #4a5568; flex-grow: 1; }
+.project-more { align-self: flex-start; border: 0; background: none; padding: 0; font-weight: 700; color: var(--ggi-green, #00a86b); }
+.project-more:hover { text-decoration: underline; }
+
+.project-modal {
+  position: fixed; inset: 0; z-index: 2000; background: rgba(8, 20, 45, .75);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.project-modal-card {
+  position: relative; background: #fff; border-radius: 1rem; width: 100%; max-width: 640px;
+  max-height: 90vh; overflow-y: auto;
+}
+.project-modal-card img { width: 100%; max-height: 300px; object-fit: cover; display: block; }
+.project-desc { white-space: pre-wrap; line-height: 1.7; color: #2d3748; }
+.project-close {
+  position: absolute; top: .75rem; right: .75rem; width: 38px; height: 38px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, .9); z-index: 1;
+}

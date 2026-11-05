@@ -136,3 +136,16 @@ ALTER TABLE payments
 
   ALTER TABLE contribution_settings
   ADD COLUMN monthly_due_day TINYINT NOT NULL DEFAULT 15 AFTER yearly_amount;
+
+  CREATE TABLE projects (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(150) NOT NULL,
+  summary VARCHAR(300) NULL,
+  description TEXT NULL,
+  image_path VARCHAR(255) NULL,
+  status ENUM('planned','ongoing','completed') NOT NULL DEFAULT 'planned',
+  is_published TINYINT(1) NOT NULL DEFAULT 0,
+  created_by INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id)
+);
