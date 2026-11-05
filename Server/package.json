@@ -5,10 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
- 
-  "dev": "nodemon server.js",
-  "start": "node server.js",
-  "seed:admin": "node seeders/createAdmin.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed:admin": "node seeders/createAdmin.js"
   },
   "keywords": [],
   "author": "",

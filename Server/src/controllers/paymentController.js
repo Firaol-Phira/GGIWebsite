@@ -22,6 +22,7 @@ const cleanUrl = (raw) => {
 
 // A quarterly installment is 25% of the yearly amount
 const quarterAmount = (yearly) => Math.round(Number(yearly) * 25) / 100;
+const pad = (n) => String(n).padStart(2, "0");
 
 // Returns [errorCode, message] or [null, dataToSave]
 const prepare = async (b, memberId, methods) => {
@@ -149,13 +150,14 @@ exports.myPayments = async (req, res, next) => {
   }
 };
 
-// GET /api/payments/my-status?year=2026
+// GET /api/payments/my-status?year=2026  (includes the deadline of every period)
 exports.myStatus = async (req, res, next) => {
   try {
     const year = Number(req.query.year) || new Date().getFullYear();
     const setting = await ContributionSetting.findByYear(year);
     if (!setting) return res.json({ year, configured: false });
 
+    const day = setting.monthly_due_day || 15;
     const rows = req.user.member_id
       ? await Payment.coverage(req.user.member_id, year)
       : [];
@@ -163,19 +165,28 @@ exports.myStatus = async (req, res, next) => {
       const hit = rows.find(
         (r) => r.payment_type === "monthly" && r.period_month === i + 1,
       );
-      return { month: i + 1, status: hit ? hit.status : null };
+      return {
+        month: i + 1,
+        status: hit ? hit.status : null,
+        due: `${year}-${pad(i + 1)}-${pad(day)}`,
+      };
     });
     const quarters = [1, 2, 3, 4].map((q) => {
       const hit = rows.find(
         (r) => r.payment_type === "yearly" && r.period_quarter === q,
       );
-      return { quarter: q, status: hit ? hit.status : null };
+      return {
+        quarter: q,
+        status: hit ? hit.status : null,
+        due: setting[`q${q}_due`] || null,
+      };
     });
     res.json({
       year,
       configured: true,
       monthly_amount: setting.monthly_amount,
       yearly_amount: setting.yearly_amount,
+      monthly_due_day: day,
       quarter_amount: quarterAmount(setting.yearly_amount),
       months,
       quarters,
@@ -233,8 +244,7 @@ const review = (newStatus) => async (req, res, next) => {
 exports.approvePayment = review("approved");
 exports.rejectPayment = review("rejected");
 
-// GET /api/payments/unpaid?year=2026&month=11   (monthly report)
-// GET /api/payments/unpaid?year=2026&quarter=2  (yearly installment report)
+// GET /api/payments/unpaid?year=2026&month=11   or   ?year=2026&quarter=2
 exports.unpaid = async (req, res, next) => {
   try {
     const year = Number(req.query.year);

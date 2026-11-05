@@ -30,3 +30,4 @@
   padding: 1rem 1.25rem;
 }
 .ggi-amount-box .value { color: var(--ggi-gold); font-size: 1.8rem; font-weight: 800; }
+.ggi-month.overdue { border: 2px solid #dc3545; background: #fdecee; color: #a71d2a; }

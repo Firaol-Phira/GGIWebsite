@@ -3,29 +3,33 @@ const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs");
 
-const dir = path.resolve(__dirname, "../../uploads/receipts");
+const dir = path.resolve(__dirname, "../../uploads/gallery");
 fs.mkdirSync(dir, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, dir),
-  filename: (req, file, cb) =>
-    cb(
-      null,
-      crypto.randomBytes(12).toString("hex") +
-        path.extname(file.originalname).toLowerCase(),
-    ),
-});
+const EXT = [".jpg", ".jpeg", ".png", ".webp"];
+const MIME = ["image/jpeg", "image/png", "image/webp"];
 
-const ALLOWED = [".jpg", ".jpeg", ".png", ".pdf"];
+exports.galleryDir = dir;
 
-exports.receiptUpload = multer({
-  storage,
-  limits: { fileSize: 3 * 1024 * 1024 },
+exports.galleryUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, dir),
+    filename: (req, file, cb) =>
+      cb(
+        null,
+        crypto.randomBytes(12).toString("hex") +
+          path.extname(file.originalname).toLowerCase(),
+      ),
+  }),
+  limits: { fileSize: 5 * 1024 * 1024, files: 10 },
   fileFilter: (req, file, cb) => {
-    if (ALLOWED.includes(path.extname(file.originalname).toLowerCase()))
+    if (
+      EXT.includes(path.extname(file.originalname).toLowerCase()) &&
+      MIME.includes(file.mimetype)
+    )
       return cb(null, true);
-    const err = new Error("Receipt must be a JPG, PNG or PDF");
+    const err = new Error("Only JPG, PNG or WebP photos are allowed");
     err.code = "BAD_FILE";
     cb(err);
   },
-}).single("receipt");
+}).array("photos", 10);

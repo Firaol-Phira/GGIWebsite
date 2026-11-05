@@ -7,13 +7,14 @@ const TABS = [
   ["monthly", "Monthly payments"],
   ["yearly", "Yearly payments"],
   ["unpaid", "Unpaid"],
-  ["amounts", "Amounts"],
+  ["amounts", "Amounts & deadlines"],
 ];
 const thisYear = new Date().getFullYear();
 const EMPTY = {
   year: thisYear,
   monthly_amount: "",
   yearly_amount: "",
+  monthly_due_day: 15,
   q1_due: "",
   q2_due: "",
   q3_due: "",
@@ -134,7 +135,7 @@ export default function Finance() {
     setOk("");
     try {
       await api.put(`/settings/contributions/${form.year}`, form);
-      setOk(`Amounts for ${form.year} saved`);
+      setOk(`Amounts and deadlines for ${form.year} saved`);
       load();
     } catch (err) {
       setError(errorMessage(err));
@@ -178,7 +179,7 @@ export default function Finance() {
         <>
           <form className="card ggi-panel mb-3" onSubmit={saveAmounts}>
             <div className="card-body row g-3 align-items-end">
-              <div className="col-4 col-md-2">
+              <div className="col-6 col-md-2">
                 <label className="form-label fw-semibold">Year</label>
                 <input
                   type="number"
@@ -188,8 +189,10 @@ export default function Finance() {
                   required
                 />
               </div>
-              <div className="col-4 col-md-3">
-                <label className="form-label fw-semibold">Monthly (birr)</label>
+              <div className="col-6 col-md-3">
+                <label className="form-label fw-semibold">
+                  Monthly amount (birr)
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -199,8 +202,10 @@ export default function Finance() {
                   required
                 />
               </div>
-              <div className="col-4 col-md-3 " >
-                <label className="form-label fw-semibold">Yearly (birr)</label>
+              <div className="col-6 col-md-3">
+                <label className="form-label fw-semibold">
+                  Yearly amount (birr)
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -211,12 +216,26 @@ export default function Finance() {
                 />
                
               </div>
-              <div className="col-12 d-none d-md-block col-md-4" />
+              <div className="col-6 col-md-4">
+                <label className="form-label fw-semibold">
+                  Monthly deadline (day of the month)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="28"
+                  className="form-control"
+                  value={form.monthly_due_day}
+                  onChange={f("monthly_due_day")}
+                  required
+                />
+                
+              </div>
 
               {[1, 2, 3, 4].map((q) => (
                 <div className="col-6 col-md-3" key={q}>
                   <label className="form-label fw-semibold">
-                    Quarter {q} due date
+                    Quarter {q} deadline
                   </label>
                   <input
                     type="date"
@@ -228,7 +247,9 @@ export default function Finance() {
               ))}
 
               <div className="col-12">
-                <button className="btn ggi-btn-green">Save amounts</button>
+                <button className="btn ggi-btn-green">
+                  Save amounts &amp; deadlines
+                </button>
               </div>
             </div>
           </form>
@@ -239,10 +260,11 @@ export default function Finance() {
               "Monthly",
               "Yearly",
               "Per quarter",
-              "Q1 due",
-              "Q2 due",
-              "Q3 due",
-              "Q4 due",
+              "Monthly deadline",
+              "Q1",
+              "Q2",
+              "Q3",
+              "Q4",
               "",
             ]}
             empty={!rows.length}
@@ -253,6 +275,7 @@ export default function Finance() {
                 <td>{Number(s.monthly_amount).toLocaleString()}</td>
                 <td>{Number(s.yearly_amount).toLocaleString()}</td>
                 <td>{(Number(s.yearly_amount) / 4).toLocaleString()}</td>
+                <td>Day {s.monthly_due_day}</td>
                 {[1, 2, 3, 4].map((q) => (
                   <td key={q}>{s[`q${q}_due`] || "-"}</td>
                 ))}
@@ -338,6 +361,7 @@ export default function Finance() {
               tab === "monthly" ? "Month" : "Quarter",
               "Amount",
               "Method",
+              "Deadline",
               "Paid on",
               "Timing",
               "Receipt",
@@ -361,6 +385,9 @@ export default function Finance() {
                 </td>
                 <td>{Number(p.amount).toLocaleString()}</td>
                 <td className="text-uppercase">{p.method}</td>
+                <td>
+                  {p.due_date ? new Date(p.due_date).toLocaleDateString() : "-"}
+                </td>
                 <td>{new Date(p.payment_date).toLocaleDateString()}</td>
                 <td>
                   <Timing p={p} />

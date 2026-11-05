@@ -44,6 +44,13 @@ export default function Contribute({ type }) {
       : info.monthly_amount
     : 0;
 
+  // Deadline of the chosen period, and whether the chosen payment date is past it
+  const chosen = free.find(
+    (x) => String(yearly ? x.quarter : x.month) === String(f.period),
+  );
+  const due = chosen?.due || null;
+  const willBeLate = due && f.date > due;
+
   const submit = async (e) => {
     e.preventDefault();
     setError("");
@@ -58,7 +65,7 @@ export default function Contribute({ type }) {
         receipt_url: f.url,
         note: f.note,
       });
-      setDone(data);
+      setDone({ ...data, late: willBeLate });
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -76,6 +83,11 @@ export default function Contribute({ type }) {
           <strong>{Number(done.amount).toLocaleString()} birr</strong> is
           waiting for review. It counts as paid only after finance approves it.
         </p>
+        {done.late && (
+          <p className="text-danger fw-semibold">
+            It was paid after the deadline, so it will be marked Late.
+          </p>
+        )}
         <Link to="/member" className="btn ggi-btn-green">
           Back to member portal
         </Link>
@@ -116,6 +128,13 @@ export default function Contribute({ type }) {
                     {Number(amount).toLocaleString()} birr
                   </div>
                 </div>
+                {!yearly && (
+                  <p className="small mb-3">
+                    <i className="bi bi-calendar-check me-1" />
+                    Deadline: day <strong>{info.monthly_due_day}</strong> of the
+                    month you are paying for. After that it is marked Late.
+                  </p>
+                )}
                 {PAY_ACCOUNTS.map((a) => (
                   <div className="ggi-account mb-2" key={a.method}>
                     <div className="fw-semibold">{a.label}</div>
@@ -175,6 +194,29 @@ export default function Contribute({ type }) {
                           ))}
                     </select>
                   </div>
+
+                  {chosen && (
+                    <div className="col-12">
+                      <div
+                        className={`alert py-2 mb-0 ${willBeLate ? "alert-danger" : "alert-info"}`}
+                      >
+                        {due ? (
+                          <>
+                            Deadline:{" "}
+                            <strong>
+                              {new Date(due).toLocaleDateString()}
+                            </strong>
+                            .{" "}
+                            {willBeLate
+                              ? "Your payment date is after it, so it will be marked Late."
+                              : "Your payment date is on time."}
+                          </>
+                        ) : (
+                          "Finance has not set a deadline for this quarter yet."
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="col-6">
                     <label className="form-label fw-semibold">Paid with</label>

@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const pool = require("./src/config/db");
 const errorHandler = require("./src/middleware/errorHandler");
+const path = require("path");
 
 const app = express();
 
@@ -21,7 +22,9 @@ app.use("/api/members", require("./src/routes/members"));
 app.use("/api/settings", require("./src/routes/settings"));
 app.use("/api/payments", require("./src/routes/payments"));
 app.use("/api/contact", require("./src/routes/contact"));
-
+// Only the gallery folder is public
+app.use("/uploads/gallery", express.static(path.join(__dirname, "uploads", "gallery"), { maxAge: "7d" }));
+app.use("/api/gallery", require("./src/routes/gallery"));
 app.use(errorHandler);
 app.use("/api/announcements", require("./src/routes/announcements"));
 

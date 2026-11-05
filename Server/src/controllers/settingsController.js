@@ -10,34 +10,43 @@ exports.listContributions = async (req, res, next) => {
   }
 };
 
-// PUT /api/settings/contributions/:year   body: { monthly_amount, yearly_amount }
+// PUT /api/settings/contributions/:year
 exports.setContribution = async (req, res, next) => {
   try {
     const year = Number(req.params.year);
     const monthly = Number(req.body.monthly_amount);
     const yearly = Number(req.body.yearly_amount);
+    const dueDay = Number(req.body.monthly_due_day);
+
     if (!year || !(monthly > 0) || !(yearly > 0)) {
       return res.status(400).json({
         message: "Valid year, monthly_amount and yearly_amount are required",
       });
     }
-const d = (k) => req.body[k] || null;
-await ContributionSetting.upsert({
-  year,
-  monthly_amount: monthly,
-  yearly_amount: yearly,
-  q1_due: d("q1_due"),
-  q2_due: d("q2_due"),
-  q3_due: d("q3_due"),
-  q4_due: d("q4_due"),
-  updated_by: req.user.id,
-});
+    if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 28) {
+      return res
+        .status(400)
+        .json({ message: "The monthly due day must be between 1 and 28" });
+    }
+
+    const d = (k) => req.body[k] || null;
+    await ContributionSetting.upsert({
+      year,
+      monthly_amount: monthly,
+      yearly_amount: yearly,
+      monthly_due_day: dueDay,
+      q1_due: d("q1_due"),
+      q2_due: d("q2_due"),
+      q3_due: d("q3_due"),
+      q4_due: d("q4_due"),
+      updated_by: req.user.id,
+    });
     await logAction(
       req.user.id,
       "SETTINGS_UPDATED",
       "contribution_settings",
       year,
-      `monthly=${monthly}, yearly=${yearly}`,
+      `monthly=${monthly}, yearly=${yearly}, dueDay=${dueDay}`,
     );
     res.json({ message: "Saved" });
   } catch (err) {

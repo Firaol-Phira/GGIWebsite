@@ -18,6 +18,8 @@ import News from "./pages/News/News";
 import Announcements from "./componenets/secretary/Announcements";
 import Contact from "./pages/Contact/Contact";
 import Messages from "./componenets/Messages/Messages";
+import Gallery from "./pages/Gallery/Gallery";
+import GalleryManager from "./componenets/secretary/Gallery/GalleryManager";
 
 const ComingSoon = ({ title }) => (
   <div className="text-center py-5">
@@ -35,6 +37,7 @@ export default function App() {
         <Route path="/About" element={<About />} />
         <Route path="/News" element={<News />} />
         <Route path="/Contact" element={<Contact />} />
+        <Route path="/Gallery" element={<Gallery />} />
       </Route>
 
       {/* Login and change password */}
@@ -84,6 +87,10 @@ export default function App() {
         <Route
           path="/secretary"
           element={<Announcements title="Announcements" />}
+        />
+        <Route
+          path="/secretary/gallery"
+          element={<GalleryManager title="Announcements" />}
         />
       </Route>
 

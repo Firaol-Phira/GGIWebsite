@@ -133,3 +133,6 @@ ALTER TABLE payments
   ADD COLUMN user_type VARCHAR(30) NULL AFTER subject,
   ADD COLUMN replied_at DATETIME NULL,
   ADD COLUMN replied_by INT NULL;
+
+  ALTER TABLE contribution_settings
+  ADD COLUMN monthly_due_day TINYINT NOT NULL DEFAULT 15 AFTER yearly_amount;

@@ -1,0 +1,46 @@
+.gallery-page { background: var(--ggi-bg, #f8f9fb); min-height: 60vh; }
+.gallery-title { color: var(--ggi-navy, #102c57); font-weight: 800; font-size: clamp(1.7rem, 4vw, 2.4rem); }
+
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+
+.gallery-tile {
+  position: relative; padding: 0; border: 0; background: #dfe5f0;
+  border-radius: 1rem; overflow: hidden; cursor: zoom-in;
+  aspect-ratio: 4 / 3;
+  box-shadow: 0 2px 10px rgba(16, 44, 87, .1);
+  opacity: 0; animation: galleryIn .5s ease forwards;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.gallery-tile:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(16, 44, 87, .2); }
+.gallery-tile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
+.gallery-tile:hover img { transform: scale(1.05); }
+
+.gallery-cap {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 1.5rem .9rem .7rem; text-align: left; color: #fff; font-size: .9rem;
+  background: linear-gradient(transparent, rgba(11, 33, 71, .85));
+}
+
+@keyframes galleryIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.gallery-empty { background: #fff; border-radius: 1rem; box-shadow: 0 2px 10px rgba(16, 44, 87, .08); }
+
+/* Viewer */
+.gallery-viewer {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(8, 20, 45, .92);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.gallery-viewer figure { margin: 0; max-width: 1100px; width: 100%; text-align: center; }
+.gallery-viewer img { max-width: 100%; max-height: 78vh; border-radius: .5rem; object-fit: contain; }
+.gallery-viewer figcaption { color: #fff; margin-top: .75rem; }
+.gallery-viewer figcaption small { color: rgba(255, 255, 255, .65); }
+
+.gv-btn {
+  position: absolute; border: 0; width: 46px; height: 46px; border-radius: 50%;
+  background: rgba(255, 255, 255, .15); color: #fff; font-size: 1.2rem;
+}
+.gv-btn:hover { background: var(--ggi-gold, #d4af37); color: var(--ggi-navy, #102c57); }
+.gv-close { top: 1rem; right: 1rem; }
+.gv-prev { left: 1rem; top: 50%; transform: translateY(-50%); }
+.gv-next { right: 1rem; top: 50%; transform: translateY(-50%); }

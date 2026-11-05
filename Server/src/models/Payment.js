@@ -1,17 +1,13 @@
 const pool = require("../config/db");
-const DUE_DAY = Number(process.env.DUE_DAY) || 15;
-// Monthly: due on DUE_DAY of that month. Quarterly: due on DUE_DAY of the quarter's first month.
+
+// Monthly: the deadline day of the month being paid (default 15 if not set).
+// Quarterly: the due date finance entered for that quarter.
 const DUE = `CASE WHEN p.payment_type = 'monthly'
-  THEN STR_TO_DATE(CONCAT(p.period_year,'-',p.period_month,'-',${DUE_DAY}),'%Y-%m-%d')
+  THEN STR_TO_DATE(CONCAT(p.period_year,'-',p.period_month,'-',COALESCE(cs.monthly_due_day,15)),'%Y-%m-%d')
   ELSE CASE p.period_quarter WHEN 1 THEN cs.q1_due WHEN 2 THEN cs.q2_due
        WHEN 3 THEN cs.q3_due ELSE cs.q4_due END END`;
-const ON_TIME = `
-  CASE
-    WHEN p.status != 'approved' THEN NULL
-    WHEN p.payment_date <= (${DUE}) THEN 'on_time'
-    ELSE 'late'
-  END AS payment_timing
-`;
+const TIMING = `(p.payment_date <= ${DUE}) AS on_time, ${DUE} AS due_date`;
+
 exports.create = async (p, db = pool) => {
   const [r] = await db.query(
     `INSERT INTO payments (member_id, payment_type, period_year, period_month, period_quarter,
@@ -82,31 +78,31 @@ exports.list = async ({ status, member_id, year, type } = {}, db = pool) => {
       params.push(val);
     }
   }
-const [rows] = await db.query(
-  `SELECT p.*, ${ON_TIME}, m.full_name AS member_name,
-          r.full_name AS recorded_by_name, v.full_name AS reviewed_by_name
-   FROM payments p
-   LEFT JOIN contribution_settings cs ON cs.year = p.period_year
-   JOIN members m ON m.id = p.member_id
-   JOIN users r ON r.id = p.recorded_by
-   LEFT JOIN users v ON v.id = p.reviewed_by
-   ${where.length ? "WHERE " + where.join(" AND ") : ""}
-   ORDER BY p.created_at DESC`,
-  params,
-);
+  const [rows] = await db.query(
+    `SELECT p.*, ${TIMING}, m.full_name AS member_name,
+            r.full_name AS recorded_by_name, v.full_name AS reviewed_by_name
+     FROM payments p
+     LEFT JOIN contribution_settings cs ON cs.year = p.period_year
+     JOIN members m ON m.id = p.member_id
+     JOIN users r ON r.id = p.recorded_by
+     LEFT JOIN users v ON v.id = p.reviewed_by
+     ${where.length ? "WHERE " + where.join(" AND ") : ""}
+     ORDER BY p.created_at DESC`,
+    params,
+  );
   return rows;
 };
 
 exports.listForMember = async (memberId, db = pool) => {
-const [rows] = await db.query(
-  `SELECT p.id, p.payment_type, p.period_year, p.period_month, p.period_quarter, p.amount,
-          p.payment_date, p.method, p.receipt_url, p.status, p.reject_reason, ${ON_TIME}
-   FROM payments p
-   LEFT JOIN contribution_settings cs ON cs.year = p.period_year
-   WHERE p.member_id = ?
-   ORDER BY p.period_year DESC, p.period_quarter DESC, p.period_month DESC`,
-  [memberId],
-);
+  const [rows] = await db.query(
+    `SELECT p.id, p.payment_type, p.period_year, p.period_month, p.period_quarter, p.amount,
+            p.payment_date, p.method, p.receipt_url, p.status, p.reject_reason, ${TIMING}
+     FROM payments p
+     LEFT JOIN contribution_settings cs ON cs.year = p.period_year
+     WHERE p.member_id = ?
+     ORDER BY p.period_year DESC, p.period_quarter DESC, p.period_month DESC`,
+    [memberId],
+  );
   return rows;
 };
 

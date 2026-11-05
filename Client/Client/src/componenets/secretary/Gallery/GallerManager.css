@@ -1,0 +1,8 @@
+.gm-previews { display: flex; flex-wrap: wrap; gap: .5rem; }
+.gm-previews img { width: 72px; height: 72px; object-fit: cover; border-radius: .5rem; border: 1px solid #e1e7f2; }
+
+.gm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.gm-item { border: 1px solid #edf0f5; border-radius: .75rem; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+.gm-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.gm-caption { padding: .5rem .75rem; font-size: .88rem; flex-grow: 1; word-break: break-word; }
+.gm-actions { display: flex; gap: .4rem; padding: 0 .75rem .75rem; }

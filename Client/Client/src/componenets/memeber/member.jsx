@@ -25,6 +25,7 @@ const sum = (rows) =>
     .reduce((s, p) => s + Number(p.amount), 0);
 const label = (s) =>
   s === "approved" ? "Paid" : s === "pending" ? "In review" : "Not paid";
+const fmt = (d) => (d ? new Date(d).toLocaleDateString() : "-");
 
 function Timing({ p }) {
   if (p.status === "rejected") return null;
@@ -35,6 +36,10 @@ function Timing({ p }) {
     </span>
   );
 }
+
+// A tile is "overdue" when it is still unpaid and its deadline has passed
+const overdue = (s, due) =>
+  !s && due && new Date(due) < new Date(new Date().toDateString());
 
 function History({ title, rows, monthly }) {
   return (
@@ -50,6 +55,7 @@ function History({ title, rows, monthly }) {
               <th>Period</th>
               <th>Amount</th>
               <th>Method</th>
+              <th>Deadline</th>
               <th>Paid on</th>
               <th>Timing</th>
               <th>Status</th>
@@ -59,7 +65,7 @@ function History({ title, rows, monthly }) {
           <tbody>
             {!rows.length && (
               <tr>
-                <td colSpan="7" className="text-center text-muted py-4">
+                <td colSpan="8" className="text-center text-muted py-4">
                   No payments yet
                 </td>
               </tr>
@@ -73,7 +79,8 @@ function History({ title, rows, monthly }) {
                 </td>
                 <td>{Number(p.amount).toLocaleString()}</td>
                 <td className="text-uppercase">{p.method}</td>
-                <td>{new Date(p.payment_date).toLocaleDateString()}</td>
+                <td>{fmt(p.due_date)}</td>
+                <td>{fmt(p.payment_date)}</td>
                 <td>
                   <Timing p={p} />
                 </td>
@@ -184,7 +191,6 @@ export default function MemberPortal() {
 
       {info?.configured && (
         <div className="row g-4 mb-4">
-          {/* Yearly, paid in 4 quarters */}
           <div className="col-12 col-lg-5">
             <div className="card ggi-panel ggi-pay-card h-100">
               <div className="card-body">
@@ -207,10 +213,13 @@ export default function MemberPortal() {
                   {quarters.map((q) => (
                     <div
                       key={q.quarter}
-                      className={`ggi-month ${q.status || ""}`}
+                      className={`ggi-month ${q.status || ""} ${overdue(q.status, q.due) ? "overdue" : ""}`}
                     >
                       <strong>Quarter {q.quarter}</strong>
-                      <small>{label(q.status)}</small>
+                      <small className="d-block">
+                        {overdue(q.status, q.due) ? "Overdue" : label(q.status)}
+                      </small>
+                      <small className="d-block">Due {fmt(q.due)}</small>
                     </div>
                   ))}
                 </div>
@@ -218,7 +227,6 @@ export default function MemberPortal() {
             </div>
           </div>
 
-          {/* Monthly */}
           <div className="col-12 col-lg-7">
             <div className="card ggi-panel h-100">
               <div className="card-body">
@@ -227,7 +235,7 @@ export default function MemberPortal() {
                     <h3 className="h5 fw-bold mb-0">Monthly contribution</h3>
                     <div className="text-muted small">
                       {Number(info.monthly_amount).toLocaleString()} birr per
-                      month
+                      month. Deadline: day {info.monthly_due_day} of each month
                     </div>
                   </div>
                   {freeMonths > 0 && (
@@ -243,10 +251,12 @@ export default function MemberPortal() {
                   {months.map((m) => (
                     <div
                       key={m.month}
-                      className={`ggi-month ${m.status || ""}`}
+                      className={`ggi-month ${m.status || ""} ${overdue(m.status, m.due) ? "overdue" : ""}`}
                     >
                       <strong>{MONTHS[m.month - 1]}</strong>
-                      <small>{label(m.status)}</small>
+                      <small className="d-block">
+                        {overdue(m.status, m.due) ? "Overdue" : label(m.status)}
+                      </small>
                     </div>
                   ))}
                 </div>

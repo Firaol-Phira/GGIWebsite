@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Offcanvas } from "bootstrap";
 import api from "../../services/api";
 import { useAuth } from "../../context/authocontext";
-import "./Dashboard.css";
+import "./dashboard.css"
 
 const MENU = {
   admin: [
@@ -17,7 +17,13 @@ const MENU = {
   ],
   finance: [{ to: "/finance", label: "Payments", icon: "bi-cash-coin" }],
   secretary: [
-    { to: "/secretary", label: "Announcements", icon: "bi-megaphone" },
+    {
+      to: "/secretary",
+      label: "Announcements",
+      icon: "bi-megaphone",
+      end: true,
+    },
+    { to: "/secretary/gallery", label: "Gallery", icon: "bi-images" },
   ],
   member: [{ to: "/member", label: "My Payments", icon: "bi-receipt" }],
 };
@@ -35,7 +41,7 @@ export default function DashboardLayout() {
     if (instance) instance.hide();
   }, [pathname]);
 
-  // Admin only: count of new contact messages (refreshes on every page change)
+  // Admin only: count of new contact messages
   useEffect(() => {
     if (user.role !== "admin") return;
     api
@@ -75,6 +81,7 @@ export default function DashboardLayout() {
               <NavLink
                 key={m.to}
                 to={m.to}
+                end={m.end}
                 className="ggi-side-link d-flex align-items-center"
               >
                 <i className={`bi ${m.icon} me-2`} />
