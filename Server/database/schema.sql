@@ -149,3 +149,8 @@ ALTER TABLE payments
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by) REFERENCES users(id)
 );
+
+
+ALTER TABLE payments
+  MODIFY payment_type ENUM('monthly','yearly','other') NOT NULL,
+  ADD COLUMN reason VARCHAR(255) NULL AFTER note;

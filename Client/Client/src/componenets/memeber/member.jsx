@@ -41,7 +41,32 @@ function Timing({ p }) {
 const overdue = (s, due) =>
   !s && due && new Date(due) < new Date(new Date().toDateString());
 
-function History({ title, rows, monthly }) {
+const Receipt = ({ p }) =>
+  p.receipt_url && (
+    <a
+      href={p.receipt_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="View receipt"
+    >
+      <i className="bi bi-eye fs-5" />
+    </a>
+  );
+
+const StatusCell = ({ p }) => (
+  <>
+    <span className={`badge rounded-pill text-bg-${COLOR[p.status]}`}>
+      {p.status}
+    </span>
+    {p.status === "rejected" && (
+      <div className="small text-danger">{p.reject_reason}</div>
+    )}
+  </>
+);
+
+// kind: "monthly" | "yearly" | "other"
+function History({ title, rows, kind }) {
+  const other = kind === "other";
   return (
     <div className="card ggi-panel mb-4">
       <div className="card-header py-3">
@@ -51,61 +76,78 @@ function History({ title, rows, monthly }) {
       <div className="table-responsive">
         <table className="table table-hover align-middle mb-0 ggi-table">
           <thead>
-            <tr>
-              <th>Period</th>
-              <th>Amount</th>
-              <th>Method</th>
-              <th>Deadline</th>
-              <th>Paid on</th>
-              <th>Timing</th>
-              <th>Status</th>
-              <th>Receipt</th>
-            </tr>
+            {other ? (
+              <tr>
+                <th>Reason</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Paid on</th>
+                <th>Status</th>
+                <th>Receipt</th>
+              </tr>
+            ) : (
+              <tr>
+                <th>Period</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Deadline</th>
+                <th>Paid on</th>
+                <th>Timing</th>
+                <th>Status</th>
+                <th>Receipt</th>
+              </tr>
+            )}
           </thead>
           <tbody>
             {!rows.length && (
               <tr>
-                <td colSpan="8" className="text-center text-muted py-4">
+                <td
+                  colSpan={other ? 6 : 8}
+                  className="text-center text-muted py-4"
+                >
                   No payments yet
                 </td>
               </tr>
             )}
             {rows.map((p) => (
               <tr key={p.id}>
-                <td>
-                  {monthly
-                    ? `${MONTHS[p.period_month - 1]} ${p.period_year}`
-                    : `Quarter ${p.period_quarter} (${p.period_year})`}
-                </td>
-                <td>{Number(p.amount).toLocaleString()}</td>
-                <td className="text-uppercase">{p.method}</td>
-                <td>{fmt(p.due_date)}</td>
-                <td>{fmt(p.payment_date)}</td>
-                <td>
-                  <Timing p={p} />
-                </td>
-                <td>
-                  <span
-                    className={`badge rounded-pill text-bg-${COLOR[p.status]}`}
-                  >
-                    {p.status}
-                  </span>
-                  {p.status === "rejected" && (
-                    <div className="small text-danger">{p.reject_reason}</div>
-                  )}
-                </td>
-                <td>
-                  {p.receipt_url && (
-                    <a
-                      href={p.receipt_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="View receipt"
-                    >
-                      <i className="bi bi-eye fs-5" />
-                    </a>
-                  )}
-                </td>
+                {other ? (
+                  <>
+                    <td style={{ minWidth: 200, whiteSpace: "normal" }}>
+                      {p.reason}
+                    </td>
+                    <td>{Number(p.amount).toLocaleString()}</td>
+                    <td className="text-uppercase">{p.method}</td>
+                    <td>{fmt(p.payment_date)}</td>
+                    <td>
+                      <StatusCell p={p} />
+                    </td>
+                    <td>
+                      <Receipt p={p} />
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>
+                      {kind === "monthly"
+                        ? `${MONTHS[p.period_month - 1]} ${p.period_year}`
+                        : `Quarter ${p.period_quarter} (${p.period_year})`}
+                    </td>
+                    <td>{Number(p.amount).toLocaleString()}</td>
+                    <td className="text-uppercase">{p.method}</td>
+                    <td>{fmt(p.due_date)}</td>
+                    <td>{fmt(p.payment_date)}</td>
+                    <td>
+                      <Timing p={p} />
+                    </td>
+                    <td>
+                      <StatusCell p={p} />
+                    </td>
+                    <td>
+                      <Receipt p={p} />
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -136,6 +178,7 @@ export default function MemberPortal() {
 
   const monthly = payments.filter((p) => p.payment_type === "monthly");
   const yearly = payments.filter((p) => p.payment_type === "yearly");
+  const other = payments.filter((p) => p.payment_type === "other");
   const pending = payments.filter((p) => p.status === "pending").length;
   const months = info?.months || [];
   const quarters = info?.quarters || [];
@@ -144,21 +187,34 @@ export default function MemberPortal() {
 
   return (
     <>
-      <h1 className="h3 ggi-page-title mb-0">Member portal</h1>
-      <p className="text-muted mb-4">Welcome, {user.full_name}</p>
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+          <h1 className="h3 ggi-page-title mb-0">Member portal</h1>
+          <p className="text-muted mb-0">Welcome, {user.full_name}</p>
+        </div>
+        <Link to="/member/pay-other" className="btn btn-outline-secondary">
+          <i className="bi bi-plus-circle me-1" />
+          Other payment / Penalty
+        </Link>
+      </div>
       {error && <div className="alert alert-danger">{error}</div>}
 
       <div className="row g-3 mb-4">
         {[
           ["Monthly paid", `${sum(monthly).toLocaleString()} birr`, "success"],
           ["Yearly paid", `${sum(yearly).toLocaleString()} birr`, "success"],
+          [
+            "Other / penalty paid",
+            `${sum(other).toLocaleString()} birr`,
+            "success",
+          ],
           ["Waiting for review", pending, "warning"],
         ].map(([l, v, c]) => (
-          <div className="col-12 col-md-4" key={l}>
+          <div className="col-6 col-lg-3" key={l}>
             <div className="card ggi-panel h-100">
               <div className="card-body">
                 <div className="text-muted small">{l}</div>
-                <div className={`h3 fw-bold mb-0 text-${c}`}>{v}</div>
+                <div className={`h4 fw-bold mb-0 text-${c}`}>{v}</div>
               </div>
             </div>
           </div>
@@ -269,8 +325,10 @@ export default function MemberPortal() {
       <History
         title="Yearly payment history (quarterly installments)"
         rows={yearly}
+        kind="yearly"
       />
-      <History title="Monthly payment history" rows={monthly} monthly />
+      <History title="Monthly payment history" rows={monthly} kind="monthly" />
+      <History title="Other payments / penalties" rows={other} kind="other" />
     </>
   );
 }

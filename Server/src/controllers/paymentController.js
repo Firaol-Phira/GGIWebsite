@@ -7,6 +7,7 @@ const HOSTS = (process.env.RECEIPT_HOSTS || "")
   .split(",")
   .map((s) => s.trim().toLowerCase())
   .filter(Boolean);
+const TYPES = ["monthly", "yearly", "other"];
 
 // Only https links (and only the allowed hosts, if RECEIPT_HOSTS is set)
 const cleanUrl = (raw) => {
@@ -20,30 +21,62 @@ const cleanUrl = (raw) => {
   }
 };
 
+// Reference: uppercase, no spaces, 6-40 letters/digits/-/_
+const cleanRef = (raw) =>
+  String(raw || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+const REF_OK = /^[A-Z0-9_-]{6,40}$/;
+
 // A quarterly installment is 25% of the yearly amount
 const quarterAmount = (yearly) => Math.round(Number(yearly) * 25) / 100;
 const pad = (n) => String(n).padStart(2, "0");
 
 // Returns [errorCode, message] or [null, dataToSave]
-const prepare = async (b, memberId, methods) => {
+const prepare = async (b, memberId, methods, source) => {
   const type = b.payment_type;
-  const year = Number(b.period_year);
+  const other = type === "other";
+
+  if (!TYPES.includes(type) || !b.payment_date || !methods.includes(b.method))
+    return [400, "Payment type, date and a valid method are required"];
+  if (new Date(b.payment_date) > new Date())
+    return [400, "Payment date cannot be in the future"];
+
+  // Other / penalty has no period: the year comes from the payment date
+  const year = other
+    ? Number(String(b.payment_date).slice(0, 4))
+    : Number(b.period_year);
   const month = type === "monthly" ? Number(b.period_month) : null;
   const quarter = type === "yearly" ? Number(b.period_quarter) : null;
 
-  if (
-    !["monthly", "yearly"].includes(type) ||
-    !year ||
-    !b.payment_date ||
-    !methods.includes(b.method)
-  )
-    return [400, "Payment type, year, date and a valid method are required"];
+  if (!year) return [400, "A valid year is required"];
   if (type === "monthly" && !(month >= 1 && month <= 12))
     return [400, "Choose the month you are paying for"];
   if (type === "yearly" && !(quarter >= 1 && quarter <= 4))
     return [400, "Choose the quarter you are paying for"];
-  if (new Date(b.payment_date) > new Date())
-    return [400, "Payment date cannot be in the future"];
+
+  let amount,
+    reason = null;
+  if (other) {
+    reason = String(b.reason || "").trim();
+    if (reason.length < 3 || reason.length > 255)
+      return [400, "Write the reason (3 to 255 characters)"];
+    amount = Math.round(Number(b.amount) * 100) / 100;
+    if (!(amount > 0) || amount > 10000000)
+      return [400, "Enter a valid amount"];
+  }
+
+  // Reference number: required for members and for non-cash finance entries
+  const reference_no = cleanRef(b.reference_no);
+  const needsRef = source === "member" || b.method !== "cash";
+  if (needsRef && !REF_OK.test(reference_no))
+    return [
+      400,
+      "Enter the transaction reference number from your receipt (6-40 letters or digits)",
+    ];
+  if (reference_no && !REF_OK.test(reference_no))
+    return [400, "The reference number is not valid"];
 
   const receipt_url = b.receipt_url ? cleanUrl(b.receipt_url) : null;
   if (b.receipt_url && !receipt_url)
@@ -53,27 +86,31 @@ const prepare = async (b, memberId, methods) => {
   if (!member) return [404, "Member not found"];
   if (member.status !== "active") return [400, "Member is not active"];
 
-  const setting = await ContributionSetting.findByYear(year);
-  if (!setting)
-    return [400, `Contribution amounts for ${year} have not been set yet`];
+  if (!other) {
+    const setting = await ContributionSetting.findByYear(year);
+    if (!setting)
+      return [400, `Contribution amounts for ${year} have not been set yet`];
+    if (
+      await Payment.findDuplicate({
+        member_id: memberId,
+        year,
+        type,
+        month,
+        quarter,
+      })
+    )
+      return [409, "A payment already exists for this period"];
+    amount =
+      type === "monthly"
+        ? setting.monthly_amount
+        : quarterAmount(setting.yearly_amount);
+  }
 
-  if (
-    await Payment.findDuplicate({
-      member_id: memberId,
-      year,
-      type,
-      month,
-      quarter,
-    })
-  )
-    return [409, "A payment already exists for this period"];
+  if (reference_no && (await Payment.findByReference(b.method, reference_no)))
+    return [409, "This reference number was already used"];
   if (receipt_url && (await Payment.findByReceiptUrl(receipt_url)))
     return [409, "This receipt link was already used"];
 
-  const amount =
-    type === "monthly"
-      ? setting.monthly_amount
-      : quarterAmount(setting.yearly_amount);
   return [
     null,
     {
@@ -85,14 +122,16 @@ const prepare = async (b, memberId, methods) => {
       amount,
       payment_date: b.payment_date,
       method: b.method,
+      reference_no: reference_no || null,
       receipt_url,
       note: b.note,
+      reason,
     },
   ];
 };
 
 // source "member": member reports their own payment (link required)
-// source "finance": finance records a payment for a member (cash needs no link)
+// source "finance": finance records a payment for a member (cash needs no link or reference)
 const record = (source, methods) => async (req, res, next) => {
   try {
     const memberId =
@@ -109,7 +148,7 @@ const record = (source, methods) => async (req, res, next) => {
     if (source === "member" && !req.body.receipt_url)
       return res.status(400).json({ message: "Paste your receipt link" });
 
-    const [code, data] = await prepare(req.body, memberId, methods);
+    const [code, data] = await prepare(req.body, memberId, methods, source);
     if (code) return res.status(code).json({ message: data });
 
     const id = await Payment.create({
@@ -131,7 +170,7 @@ const record = (source, methods) => async (req, res, next) => {
 exports.createPayment = record("finance", ["cash", "cbe", "telebirr", "other"]);
 exports.submitPayment = record("member", ["cbe", "telebirr", "other"]);
 
-// GET /api/payments?status=pending&type=yearly&year=2026&member_id=1
+// GET /api/payments?status=pending&type=other&year=2026&member_id=1
 exports.listPayments = async (req, res, next) => {
   try {
     res.json({ payments: await Payment.list(req.query) });

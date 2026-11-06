@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import api, { errorMessage } from "../../services/api";
-import { useAuth } from "../../context/authocontext";
+import api, { errorMessage } from "../../../services/api";
+import { useAuth } from "../../../context/authocontext";
 
 const ROLES = ["member", "finance", "secretary", "admin"];
 const EMPTY = { full_name: "", email: "", phone: "", role: "member" };

@@ -47,10 +47,16 @@ export default function DashboardLayout() {
 
   return (
     <div className="ggi-dash d-lg-flex">
-      <aside className="offcanvas-lg offcanvas-start ggi-sidebar-wrap" tabIndex="-1" id="dashMenu">
-        <div className="ggi-sidebar d-flex flex-column">
+      <aside
+        className="offcanvas-lg offcanvas-start ggi-sidebar-wrap "
+        tabIndex="-1"
+        id="dashMenu"
+      >
+        <div className="ggi-sidebar d-flex flex-column vstack">
           <div className="d-flex align-items-center justify-content-between p-3">
-            <NavLink to="/" className="ggi-side-logo text-decoration-none">GGI</NavLink>
+            <NavLink to="/" className="ggi-side-logo text-decoration-none">
+              GGI
+            </NavLink>
             <button
               type="button"
               className="btn-close btn-close-white d-lg-none"
@@ -62,11 +68,18 @@ export default function DashboardLayout() {
 
           <nav className="nav flex-column px-2 flex-grow-1">
             {(MENU[user.role] || []).map((m) => (
-              <NavLink key={m.to} to={m.to} end={m.end} className="ggi-side-link d-flex align-items-center">
+              <NavLink
+                key={m.to}
+                to={m.to}
+                end={m.end}
+                className="ggi-side-link d-flex align-items-center"
+              >
                 <i className={`bi ${m.icon} me-2`} />
                 {m.label}
                 {m.badge && unread > 0 && (
-                  <span className="badge rounded-pill text-bg-danger ms-auto">{unread}</span>
+                  <span className="badge rounded-pill text-bg-danger ms-auto">
+                    {unread}
+                  </span>
                 )}
               </NavLink>
             ))}
@@ -115,9 +128,14 @@ export default function DashboardLayout() {
           <div className="d-flex align-items-center gap-3">
             <div className="text-end lh-sm">
               <div className="fw-semibold">{user.full_name}</div>
-              <span className="badge ggi-role-badge text-capitalize">{user.role}</span>
+              <span className="badge ggi-role-badge text-capitalize">
+                {user.role}
+              </span>
             </div>
-            <button className="btn btn-outline-secondary btn-sm" onClick={signOut}>
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              onClick={signOut}
+            >
               <i className="bi bi-box-arrow-right me-1" />
               Log out
             </button>

@@ -30,9 +30,9 @@ app.use(
   express.static(path.join(__dirname, "uploads", "projects"), { maxAge: "7d" }),
 );
 app.use("/api/projects", require("./src/routes/projects"));
+app.use("/api/announcements", require("./src/routes/announcements"));
 
 app.use(errorHandler);
-app.use("/api/announcements", require("./src/routes/announcements"));
 
 const PORT = process.env.PORT || 5000;
 

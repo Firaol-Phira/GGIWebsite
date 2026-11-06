@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api, { errorMessage } from "../../services/api";
+import api, { errorMessage } from "../../../services/api";
 import "./Announcements.css"
 
 export const CATEGORIES = {

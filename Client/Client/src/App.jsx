@@ -9,15 +9,15 @@ import ChangePassword from "./componenets/changepass/changePassword";
 import Login from "./pages/Login/Login";
 import ProtectedRoute from "./routes/protectedRoute";
 
-import Users from "./componenets/user/user";
+import Users from "./componenets/Admin/user/user";
 import MemberPortal from "./componenets/memeber/member";
 import Contribute from "./componenets/contribute/contribute";
 import Finance from "./componenets/Finance/finance";
 import About from "./pages/About/About";
 import News from "./pages/News/News";
-import Announcements from "./componenets/secretary/Announcements";
+import Announcements from "./componenets/secretary/Announcement/Announcements";
 import Contact from "./pages/Contact/Contact";
-import Messages from "./componenets/Messages/Messages";
+import Messages from "./componenets/Admin/Messages/Messages";
 import Gallery from "./pages/Gallery/Gallery";
 import GalleryManager from "./componenets/secretary/Gallery/GalleryManager";
 import Projects from "./pages/Projects/Projects";
@@ -116,6 +116,10 @@ export default function App() {
         <Route
           path="/member/pay-yearly"
           element={<Contribute key="y" type="yearly" />}
+        />
+        <Route
+          path="/member/pay-other"
+          element={<Contribute key="y" type="other" />}
         />
       </Route>
 

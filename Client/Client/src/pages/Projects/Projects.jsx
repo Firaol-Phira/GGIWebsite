@@ -57,7 +57,7 @@ export default function Projects() {
 
         <div className="row g-4">
           {items.map((p, i) => (
-            <div className="col-12 col-md-6 col-lg-4" key={p.id}>
+            <div className="col-12 " key={p.id}>
               <article
                 className="project-card"
                 style={{ animationDelay: `${Math.min(i, 9) * 70}ms` }}

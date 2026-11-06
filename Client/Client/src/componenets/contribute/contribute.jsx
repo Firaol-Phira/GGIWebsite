@@ -6,17 +6,26 @@ import { MONTHS } from "../memeber/member";
 import "../memeber/member.css";
 
 const today = () => new Date().toISOString().slice(0, 10);
+const TITLES = {
+  monthly: "Pay monthly contribution",
+  yearly: "Pay yearly contribution (quarter)",
+  other: "Other payment / Penalty",
+};
 
 export default function Contribute({ type }) {
   const yearly = type === "yearly";
+  const other = type === "other";
   const [year, setYear] = useState(new Date().getFullYear());
   const [info, setInfo] = useState(null);
   const [f, setF] = useState({
     period: "",
     method: "cbe",
     date: today(),
+    ref: "",
     url: "",
     note: "",
+    amount: "",
+    reason: "",
   });
   const [error, setError] = useState("");
   const [done, setDone] = useState(null);
@@ -24,6 +33,7 @@ export default function Contribute({ type }) {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   useEffect(() => {
+    if (other) return; // no fixed amount or period for other payments
     setInfo(null);
     setF((x) => ({ ...x, period: "" }));
     api
@@ -32,19 +42,16 @@ export default function Contribute({ type }) {
       .catch((err) => setError(errorMessage(err)));
   }, [year, type]);
 
-  const ready = info?.configured;
-  const free = !ready
-    ? []
-    : yearly
-      ? (info.quarters || []).filter((q) => !q.status)
-      : (info.months || []).filter((m) => !m.status);
-  const amount = ready
-    ? yearly
-      ? info.quarter_amount
-      : info.monthly_amount
-    : 0;
+  const ready = other || info?.configured;
+  const free =
+    other || !info?.configured
+      ? []
+      : yearly
+        ? (info.quarters || []).filter((q) => !q.status)
+        : (info.months || []).filter((m) => !m.status);
+  const amount =
+    ready && !other ? (yearly ? info.quarter_amount : info.monthly_amount) : 0;
 
-  // Deadline of the chosen period, and whether the chosen payment date is past it
   const chosen = free.find(
     (x) => String(yearly ? x.quarter : x.month) === String(f.period),
   );
@@ -55,13 +62,21 @@ export default function Contribute({ type }) {
     e.preventDefault();
     setError("");
     setBusy(true);
+    const body = other
+      ? { payment_type: "other", amount: f.amount, reason: f.reason }
+      : {
+          payment_type: type,
+          period_year: year,
+          ...(yearly
+            ? { period_quarter: f.period }
+            : { period_month: f.period }),
+        };
     try {
       const { data } = await api.post("/payments/submit", {
-        payment_type: type,
-        period_year: year,
-        ...(yearly ? { period_quarter: f.period } : { period_month: f.period }),
+        ...body,
         method: f.method,
         payment_date: f.date,
+        reference_no: f.ref,
         receipt_url: f.url,
         note: f.note,
       });
@@ -96,39 +111,43 @@ export default function Contribute({ type }) {
 
   return (
     <>
-      <h1 className="h3 ggi-page-title mb-4">
-        {yearly
-          ? "Pay yearly contribution (quarter)"
-          : "Pay monthly contribution"}
-      </h1>
+      <h1 className="h3 ggi-page-title mb-4">{TITLES[type]}</h1>
       {error && <div className="alert alert-danger">{error}</div>}
       {info && !ready && (
         <div className="alert alert-warning">
           Amounts for {year} have not been set yet.
         </div>
       )}
-      {ready && !free.length && (
+      {ready && !other && !free.length && (
         <div className="alert alert-warning">
           Every {yearly ? "quarter" : "month"} of {year} is already paid or in
           review.
         </div>
       )}
 
-      {ready && free.length > 0 && (
+      {ready && (other || free.length > 0) && (
         <div className="row g-4">
           <div className="col-12 col-lg-5">
             <div className="card ggi-panel ggi-pay-card h-100">
               <div className="card-body">
                 <h2 className="h5 fw-bold">Step 1: Send the money</h2>
-                <div className="ggi-amount-box my-3">
-                  <div className="small">
-                    Amount to pay{yearly && " (25% of the yearly amount)"}
+                {other ? (
+                  <p className="text-muted my-3">
+                    Pay the amount you owe (for example a penalty the committee
+                    told you about), then describe it in Step 2. There is no
+                    fixed price.
+                  </p>
+                ) : (
+                  <div className="ggi-amount-box my-3">
+                    <div className="small">
+                      Amount to pay{yearly && " (25% of the yearly amount)"}
+                    </div>
+                    <div className="value">
+                      {Number(amount).toLocaleString()} birr
+                    </div>
                   </div>
-                  <div className="value">
-                    {Number(amount).toLocaleString()} birr
-                  </div>
-                </div>
-                {!yearly && (
+                )}
+                {type === "monthly" && (
                   <p className="small mb-3">
                     <i className="bi bi-calendar-check me-1" />
                     Deadline: day <strong>{info.monthly_due_day}</strong> of the
@@ -143,8 +162,9 @@ export default function Contribute({ type }) {
                   </div>
                 ))}
                 <p className="small text-muted mt-3 mb-0">
-                  Pay the exact amount, then copy the receipt link you get after
-                  the transfer.
+                  After the transfer, copy the{" "}
+                  <strong>transaction reference number</strong> and the receipt
+                  link.
                 </p>
               </div>
             </div>
@@ -155,67 +175,101 @@ export default function Contribute({ type }) {
               <div className="card-body">
                 <h2 className="h5 fw-bold mb-3">Step 2: Report your payment</h2>
                 <div className="row g-3">
-                  <div className="col-6">
-                    <label className="form-label fw-semibold">Year</label>
-                    <select
-                      className="form-select"
-                      value={year}
-                      onChange={(e) => setYear(Number(e.target.value))}
-                    >
-                      {[year - 1, year, year + 1]
-                        .filter((v, i, a) => a.indexOf(v) === i)
-                        .map((y) => (
-                          <option key={y}>{y}</option>
-                        ))}
-                    </select>
-                  </div>
-
-                  <div className="col-6">
-                    <label className="form-label fw-semibold">
-                      {yearly ? "Quarter" : "Month"}
-                    </label>
-                    <select
-                      className="form-select"
-                      value={f.period}
-                      onChange={set("period")}
-                      required
-                    >
-                      <option value="">Choose</option>
-                      {yearly
-                        ? free.map((q) => (
-                            <option key={q.quarter} value={q.quarter}>
-                              Quarter {q.quarter}
-                            </option>
-                          ))
-                        : free.map((m) => (
-                            <option key={m.month} value={m.month}>
-                              {MONTHS[m.month - 1]}
-                            </option>
-                          ))}
-                    </select>
-                  </div>
-
-                  {chosen && (
-                    <div className="col-12">
-                      <div
-                        className={`alert py-2 mb-0 ${willBeLate ? "alert-danger" : "alert-info"}`}
-                      >
-                        {due ? (
-                          <>
-                            Deadline:{" "}
-                            <strong>
-                              {new Date(due).toLocaleDateString()}
-                            </strong>
-                            .{" "}
-                            {willBeLate
-                              ? "Your payment date is after it, so it will be marked Late."
-                              : "Your payment date is on time."}
-                          </>
-                        ) : (
-                          "Finance has not set a deadline for this quarter yet."
-                        )}
+                  {other ? (
+                    <>
+                      <div className="col-12">
+                        <label className="form-label fw-semibold">
+                          Reason for this payment
+                        </label>
+                        <textarea
+                          className="form-control"
+                          rows="3"
+                          minLength={3}
+                          maxLength={255}
+                          required
+                          placeholder="e.g. Penalty for missing the general assembly"
+                          value={f.reason}
+                          onChange={set("reason")}
+                        />
                       </div>
-                    </div>
+                      <div className="col-12 col-md-6">
+                        <label className="form-label fw-semibold">
+                          Amount paid (birr)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="0.01"
+                          className="form-control"
+                          required
+                          value={f.amount}
+                          onChange={set("amount")}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="col-6">
+                        <label className="form-label fw-semibold">Year</label>
+                        <select
+                          className="form-select"
+                          value={year}
+                          onChange={(e) => setYear(Number(e.target.value))}
+                        >
+                          {[year - 1, year, year + 1]
+                            .filter((v, i, a) => a.indexOf(v) === i)
+                            .map((y) => (
+                              <option key={y}>{y}</option>
+                            ))}
+                        </select>
+                      </div>
+                      <div className="col-6">
+                        <label className="form-label fw-semibold">
+                          {yearly ? "Quarter" : "Month"}
+                        </label>
+                        <select
+                          className="form-select"
+                          value={f.period}
+                          onChange={set("period")}
+                          required
+                        >
+                          <option value="">Choose</option>
+                          {yearly
+                            ? free.map((q) => (
+                                <option key={q.quarter} value={q.quarter}>
+                                  Quarter {q.quarter}
+                                </option>
+                              ))
+                            : free.map((m) => (
+                                <option key={m.month} value={m.month}>
+                                  {MONTHS[m.month - 1]}
+                                </option>
+                              ))}
+                        </select>
+                      </div>
+                      {chosen && (
+                        <div className="col-12">
+                          <div
+                            className={`alert py-2 mb-0 ${willBeLate ? "alert-danger" : "alert-info"}`}
+                          >
+                            {due ? (
+                              <>
+                                Deadline:{" "}
+                                <strong>
+                                  {new Date(due).toLocaleDateString()}
+                                </strong>
+                                .{" "}
+                                {willBeLate
+                                  ? "Your payment date is after it, so it will be marked Late."
+                                  : "Your payment date is on time."}
+                              </>
+                            ) : (
+                              "Finance has not set a deadline for this quarter yet."
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <div className="col-6">
@@ -247,6 +301,24 @@ export default function Contribute({ type }) {
 
                   <div className="col-12">
                     <label className="form-label fw-semibold">
+                      Transaction reference number
+                    </label>
+                    <input
+                      className="form-control text-uppercase"
+                      maxLength={40}
+                      required
+                      placeholder="e.g. FT26312ABC"
+                      value={f.ref}
+                      onChange={set("ref")}
+                    />
+                    <div className="form-text">
+                      Copy it exactly from your bank or Telebirr confirmation.
+                      Finance checks it against the account statement.
+                    </div>
+                  </div>
+
+                  <div className="col-12">
+                    <label className="form-label fw-semibold">
                       Receipt link
                     </label>
                     <input
@@ -257,10 +329,6 @@ export default function Contribute({ type }) {
                       onChange={set("url")}
                       required
                     />
-                    <div className="form-text">
-                      Paste the link to your receipt. Finance will open it to
-                      check your payment.
-                    </div>
                   </div>
 
                   <div className="col-12">

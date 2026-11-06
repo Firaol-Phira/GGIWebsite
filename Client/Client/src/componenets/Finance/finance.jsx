@@ -6,6 +6,7 @@ const COLOR = { approved: "success", pending: "warning", rejected: "danger" };
 const TABS = [
   ["monthly", "Monthly payments"],
   ["yearly", "Yearly payments"],
+  ["other", "Other / Penalty"],
   ["unpaid", "Unpaid"],
   ["amounts", "Amounts & deadlines"],
 ];
@@ -156,6 +157,54 @@ export default function Finance() {
       q4_due: s.q4_due || "",
     });
 
+  const isOther = tab === "other";
+  const receipt = (p) =>
+    p.receipt_url ? (
+      <a
+        href={p.receipt_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Open receipt"
+      >
+        <i className="bi bi-eye fs-5" />
+      </a>
+    ) : (
+      <span className="text-muted small">None</span>
+    );
+  const ref = (p) => (
+    <>
+      <span className="text-uppercase">{p.method}</span>
+      <div className="small text-muted">{p.reference_no || "-"}</div>
+    </>
+  );
+  const statusCell = (p) => (
+    <>
+      <span className={`badge rounded-pill text-bg-${COLOR[p.status]}`}>
+        {p.status}
+      </span>
+      {p.status === "rejected" && (
+        <div className="small text-danger">{p.reject_reason}</div>
+      )}
+    </>
+  );
+  const actions = (p) =>
+    p.status === "pending" && (
+      <>
+        <button
+          className="btn btn-sm btn-success me-1"
+          onClick={() => review(p, "approve")}
+        >
+          Approve
+        </button>
+        <button
+          className="btn btn-sm btn-outline-danger"
+          onClick={() => review(p, "reject")}
+        >
+          Reject
+        </button>
+      </>
+    );
+
   return (
     <>
       <h1 className="h3 ggi-page-title mb-3">Payments</h1>
@@ -214,7 +263,9 @@ export default function Finance() {
                   onChange={f("yearly_amount")}
                   required
                 />
-               
+                <div className="form-text">
+                  Each quarter: {quarter} birr (25%)
+                </div>
               </div>
               <div className="col-6 col-md-4">
                 <label className="form-label fw-semibold">
@@ -229,7 +280,9 @@ export default function Finance() {
                   onChange={f("monthly_due_day")}
                   required
                 />
-                
+                <div className="form-text">
+                  1-28. Paying after this day shows Late.
+                </div>
               </div>
 
               {[1, 2, 3, 4].map((q) => (
@@ -339,7 +392,7 @@ export default function Finance() {
         </>
       )}
 
-      {(tab === "monthly" || tab === "yearly") && (
+      {(tab === "monthly" || tab === "yearly" || isOther) && (
         <>
           <div className="btn-group btn-group-sm mb-3">
             {[
@@ -355,88 +408,89 @@ export default function Finance() {
               </button>
             ))}
           </div>
-          <Table
-            head={[
-              "Member",
-              tab === "monthly" ? "Month" : "Quarter",
-              "Amount",
-              "Method",
-              "Deadline",
-              "Paid on",
-              "Timing",
-              "Receipt",
-              "Status",
-              "",
-            ]}
-            empty={!rows.length}
-            emptyText={
-              status === "pending"
-                ? "Nothing waiting for review"
-                : "No payments yet"
-            }
-          >
-            {rows.map((p) => (
-              <tr key={p.id}>
-                <td className="fw-semibold">{p.member_name}</td>
-                <td>
-                  {tab === "monthly"
-                    ? `${MONTHS[p.period_month - 1]} ${p.period_year}`
-                    : `Quarter ${p.period_quarter} (${p.period_year})`}
-                </td>
-                <td>{Number(p.amount).toLocaleString()}</td>
-                <td className="text-uppercase">{p.method}</td>
-                <td>
-                  {p.due_date ? new Date(p.due_date).toLocaleDateString() : "-"}
-                </td>
-                <td>{new Date(p.payment_date).toLocaleDateString()}</td>
-                <td>
-                  <Timing p={p} />
-                </td>
-                <td>
-                  {p.receipt_url ? (
-                    <a
-                      href={p.receipt_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open receipt"
-                    >
-                      <i className="bi bi-eye fs-5" />
-                    </a>
-                  ) : (
-                    <span className="text-muted small">None</span>
-                  )}
-                </td>
-                <td>
-                  <span
-                    className={`badge rounded-pill text-bg-${COLOR[p.status]}`}
-                  >
-                    {p.status}
-                  </span>
-                  {p.status === "rejected" && (
-                    <div className="small text-danger">{p.reject_reason}</div>
-                  )}
-                </td>
-                <td className="text-nowrap">
-                  {p.status === "pending" && (
-                    <>
-                      <button
-                        className="btn btn-sm btn-success me-1"
-                        onClick={() => review(p, "approve")}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => review(p, "reject")}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </Table>
+
+          {isOther ? (
+            <Table
+              head={[
+                "Member",
+                "Reason",
+                "Amount",
+                "Method / Reference",
+                "Paid on",
+                "Receipt",
+                "Status",
+                "",
+              ]}
+              empty={!rows.length}
+              emptyText={
+                status === "pending"
+                  ? "Nothing waiting for review"
+                  : "No other payments yet"
+              }
+            >
+              {rows.map((p) => (
+                <tr key={p.id}>
+                  <td className="fw-semibold">{p.member_name}</td>
+                  <td style={{ minWidth: 220, whiteSpace: "normal" }}>
+                    {p.reason}
+                    {p.note && <div className="small text-muted">{p.note}</div>}
+                  </td>
+                  <td>{Number(p.amount).toLocaleString()}</td>
+                  <td>{ref(p)}</td>
+                  <td>{new Date(p.payment_date).toLocaleDateString()}</td>
+                  <td>{receipt(p)}</td>
+                  <td>{statusCell(p)}</td>
+                  <td className="text-nowrap">{actions(p)}</td>
+                </tr>
+              ))}
+            </Table>
+          ) : (
+            <Table
+              head={[
+                "Member",
+                tab === "monthly" ? "Month" : "Quarter",
+                "Amount",
+                "Method / Reference",
+                "Deadline",
+                "Paid on",
+                "Timing",
+                "Receipt",
+                "Status",
+                "",
+              ]}
+              empty={!rows.length}
+              emptyText={
+                status === "pending"
+                  ? "Nothing waiting for review"
+                  : "No payments yet"
+              }
+            >
+              {rows.map((p) => (
+                <tr key={p.id}>
+                  <td className="fw-semibold">{p.member_name}</td>
+                  <td>
+                    {tab === "monthly"
+                      ? `${MONTHS[p.period_month - 1]} ${p.period_year}`
+                      : `Quarter ${p.period_quarter} (${p.period_year})`}
+                  </td>
+                  <td>{Number(p.amount).toLocaleString()}</td>
+                  <td>{ref(p)}</td>
+                  <td>
+                    {p.due_date
+                      ? new Date(p.due_date).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td>{new Date(p.payment_date).toLocaleDateString()}</td>
+                  <td>
+                    <Timing p={p} />
+                  </td>
+                  <td>{receipt(p)}</td>
+                  <td>{statusCell(p)}</td>
+                  <td className="text-nowrap">{actions(p)}</td>
+                </tr>
+              ))}
+            </Table>
+          )}
         </>
       )}
     </>
