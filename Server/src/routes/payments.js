@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const { protect, authorizeRoles } = require("../middleware/auth");
 const c = require("../controllers/paymentController");
+const s = require("../controllers/stetementController");
 
 router.use(protect);
 
@@ -13,6 +14,10 @@ router.post("/submit", c.submitPayment);
 router.get("/unpaid", authorizeRoles("admin", "finance"), c.unpaid);
 router.get("/", authorizeRoles("admin", "finance"), c.listPayments);
 router.post("/", authorizeRoles("finance"), c.createPayment);
+
+// Statement matching (finance only)
+router.post("/match", authorizeRoles("finance"), s.match);
+router.post("/approve-matched", authorizeRoles("finance"), s.approveMatched);
 
 // "/:id" routes stay last
 router.patch("/:id/approve", authorizeRoles("finance"), c.approvePayment);

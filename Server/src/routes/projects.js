@@ -1,18 +1,39 @@
 const router = require("express").Router();
 const { protect, authorizeRoles } = require("../middleware/auth");
-const c = require("../controllers/paymentController");
+const { projectUpload } = require("../middleware/upload");
+const c = require("../controllers/projectController");
 
-router.use(protect);
+router.get("/", c.list); // public
 
-router.get("/mine", c.myPayments);
-router.get("/my-status", c.myStatus);
-router.post("/submit", c.submitPayment);
+// Secretary (admin can view). These come before "/:id"
+router.get(
+  "/manage/all",
+  protect,
+  authorizeRoles("secretary", "admin"),
+  c.listAll,
+);
+router.get(
+  "/manage/:id",
+  protect,
+  authorizeRoles("secretary", "admin"),
+  c.getOne,
+);
 
-router.get("/unpaid", authorizeRoles("admin", "finance"), c.unpaid);
-router.get("/", authorizeRoles("admin", "finance"), c.listPayments);
-router.post("/", authorizeRoles("finance"), c.createPayment);
-
-router.patch("/:id/approve", authorizeRoles("finance"), c.approvePayment);
-router.patch("/:id/reject", authorizeRoles("finance"), c.rejectPayment);
+router.post("/", protect, authorizeRoles("secretary"), projectUpload, c.create);
+router.patch(
+  "/:id",
+  protect,
+  authorizeRoles("secretary"),
+  projectUpload,
+  c.update,
+);
+router.patch("/:id/publish", protect, authorizeRoles("secretary"), c.publish);
+router.patch(
+  "/:id/unpublish",
+  protect,
+  authorizeRoles("secretary"),
+  c.unpublish,
+);
+router.delete("/:id", protect, authorizeRoles("secretary"), c.remove);
 
 module.exports = router;

@@ -12,7 +12,7 @@ import ProtectedRoute from "./routes/protectedRoute";
 import Users from "./componenets/Admin/user/user";
 import MemberPortal from "./componenets/memeber/member";
 import Contribute from "./componenets/contribute/contribute";
-import Finance from "./componenets/Finance/finance";
+import Finance from "./componenets/Finance/FinanceM/finance";
 import About from "./pages/About/About";
 import News from "./pages/News/News";
 import Announcements from "./componenets/secretary/Announcement/Announcements";
@@ -22,6 +22,7 @@ import Gallery from "./pages/Gallery/Gallery";
 import GalleryManager from "./componenets/secretary/Gallery/GalleryManager";
 import Projects from "./pages/Projects/Projects";
 import ProjectManager from "./componenets/secretary/Project/projectManager";
+import StatementMatch from "./componenets/Finance/Statement/StatementMatch";
 
 const ComingSoon = ({ title }) => (
   <div className="text-center py-5">
@@ -78,6 +79,11 @@ export default function App() {
         }
       >
         <Route path="/finance" element={<Finance title="Payments" />} />
+
+        <Route
+          path="/finance/statement"
+          element={<StatementMatch title="Payments" />}
+        />
       </Route>
 
       <Route

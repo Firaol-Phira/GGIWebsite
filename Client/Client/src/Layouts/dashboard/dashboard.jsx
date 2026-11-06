@@ -8,11 +8,24 @@ import "./Dashboard.css";
 const MENU = {
   admin: [
     { to: "/admin/users", label: "Users & Roles", icon: "bi-people" },
-    { to: "/admin/messages", label: "Messages", icon: "bi-envelope", badge: true },
+    {
+      to: "/admin/messages",
+      label: "Messages",
+      icon: "bi-envelope",
+      badge: true,
+    },
   ],
-  finance: [{ to: "/finance", label: "Payments", icon: "bi-cash-coin" }],
+  finance: [
+    { to: "/finance", label: "Payments", icon: "bi-cash-coin" },
+    { to: "/finance/statement", label: "StatementMatch", icon: "bi-cash-coin" },
+  ],
   secretary: [
-    { to: "/secretary", label: "Announcements", icon: "bi-megaphone", end: true },
+    {
+      to: "/secretary",
+      label: "Announcements",
+      icon: "bi-megaphone",
+      end: true,
+    },
     { to: "/secretary/gallery", label: "Gallery", icon: "bi-images" },
     { to: "/secretary/projects", label: "Projects", icon: "bi-briefcase" },
   ],
