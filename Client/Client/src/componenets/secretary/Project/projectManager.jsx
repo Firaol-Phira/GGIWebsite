@@ -15,7 +15,7 @@ const EMPTY = {
   is_published: false,
 };
 
-export default function ProjectManager() {
+ function ProjectManager() {
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [file, setFile] = useState(null);
@@ -323,3 +323,4 @@ export default function ProjectManager() {
     </div>
   );
 }
+export default ProjectManager
