@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Offcanvas } from "bootstrap";
 import api from "../../services/api";
 import { useAuth } from "../../context/authocontext";
-import "./Dashboard.css";
+import "./dashboard.css";
 
 const MENU = {
   admin: [
@@ -14,10 +14,12 @@ const MENU = {
       icon: "bi-envelope",
       badge: true,
     },
+    { to: "/admin/report", label: "Report", icon: "bi-file-bar-graph" },
   ],
   finance: [
     { to: "/finance", label: "Payments", icon: "bi-cash-coin" },
     { to: "/finance/statement", label: "StatementMatch", icon: "bi-cash-coin" },
+    { to: "/finance/report", label: "Report", icon: "bi-file-bar-graph" },
   ],
   secretary: [
     {
@@ -65,7 +67,7 @@ export default function DashboardLayout() {
         tabIndex="-1"
         id="dashMenu"
       >
-        <div className="ggi-sidebar d-flex flex-column vstack">
+        <div className="ggi-sidebar d-flex flex-column ">
           <div className="d-flex align-items-center justify-content-between p-3">
             <NavLink to="/" className="ggi-side-logo text-decoration-none">
               GGI

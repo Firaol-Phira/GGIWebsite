@@ -23,6 +23,7 @@ import GalleryManager from "./componenets/secretary/Gallery/GalleryManager";
 import Projects from "./pages/Projects/Projects";
 import ProjectManager from "./componenets/secretary/Project/projectManager";
 import StatementMatch from "./componenets/Finance/Statement/StatementMatch";
+import Report from "./componenets/Finance/Report/Report";
 
 const ComingSoon = ({ title }) => (
   <div className="text-center py-5">
@@ -68,6 +69,7 @@ export default function App() {
         <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
         <Route path="/admin/users" element={<Users />} />
         <Route path="/admin/messages" element={<Messages />} />
+        <Route path="/admin/report" element={<Report />} />
       </Route>
 
       {/* Other dashboards (built next) */}
@@ -84,6 +86,7 @@ export default function App() {
           path="/finance/statement"
           element={<StatementMatch title="Payments" />}
         />
+        <Route path="/finance/report" element={<Report title="Payments" />} />
       </Route>
 
       <Route

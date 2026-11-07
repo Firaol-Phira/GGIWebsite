@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import api, { errorMessage } from "../../../services/api";
 import { MONTHS } from "../../memeber/member";
 import StatementMatch from "../Statement/StatementMatch";
+import Report from "../Report/Report";
 
 const COLOR = { approved: "success", pending: "warning", rejected: "danger" };
 const TABS = [
@@ -9,6 +10,7 @@ const TABS = [
   ["yearly", "Yearly payments"],
   ["other", "Other / Penalty"],
   ["match", "Match statement"],
+  ["report", "Reports"],
   ["unpaid", "Unpaid"],
   ["amounts", "Amounts & deadlines"],
 ];
@@ -77,7 +79,7 @@ export default function Finance() {
 
   const load = async () => {
     setError("");
-    if (tab === "match") return; // that tab loads its own data
+    if (tab === "match" || tab === "report") return; // these tabs load their own data
     try {
       if (tab === "amounts")
         setRows((await api.get("/settings/contributions")).data.settings);
@@ -228,6 +230,7 @@ export default function Finance() {
       </ul>
 
       {tab === "match" && <StatementMatch />}
+      {tab === "report" && <Report />}
 
       {tab === "amounts" && (
         <>

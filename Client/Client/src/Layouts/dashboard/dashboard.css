@@ -1,31 +1,73 @@
 /* ---------- Shell ---------- */
-.ggi-dash { min-height: 100vh; background: #f3f5f9; }
-.ggi-dash-main { min-width: 0; }
+.ggi-dash {
+  min-height: 100vh;
+  background: #f3f5f9;
+}
+
+.ggi-dash-main {
+  min-width: 0;
+  margin-left: 260px;
+}
 
 /* ---------- Sidebar ---------- */
-.ggi-sidebar-wrap { --bs-offcanvas-width: 260px; }
-.ggi-sidebar {
+.ggi-sidebar-wrap {
+  --bs-offcanvas-width: 260px;
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 260px;
-  height: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ggi-sidebar {
+  width: 100%;
+  min-height: 100%;
   background: var(--ggi-navy);
   color: #fff;
+  display: flex;
+  flex-direction: column;
 }
-.ggi-side-logo { color: var(--ggi-gold); font-size: 1.8rem; font-weight: 800; }
 
+.ggi-side-logo {
+  color: var(--ggi-gold);
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+/* Sidebar links */
 .ggi-side-link {
-  display: block;
+  display: flex;
+  align-items: center;
   color: rgba(255, 255, 255, .75);
   text-decoration: none;
   padding: .7rem .9rem;
   border-radius: .6rem;
   margin-bottom: .25rem;
 }
-.ggi-side-link:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+
+.ggi-side-link:hover {
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+}
+
 .ggi-side-link.active {
   background: var(--ggi-green);
   color: #fff;
   font-weight: 600;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 991.98px) {
+  .ggi-dash-main {
+    margin-left: 0;
+  }
+
+  .ggi-sidebar-wrap {
+    position: fixed;
+    height: 100vh;
+  }
 }
 
 /* ---------- Top bar ---------- */
