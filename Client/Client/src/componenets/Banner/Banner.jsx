@@ -31,7 +31,7 @@ const HIGHLIGHTS = [
 
             <p className="ggi-banner__text">
               Goal Gate Institution is a member-owned institute where every contribution is
-              tracked, every member has a voice, and our success is shared.
+              tracked, every member has a voice, and our success is .
             </p>
 
             <div className="d-flex flex-wrap gap-3">
